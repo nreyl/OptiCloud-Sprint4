@@ -1,0 +1,64 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: auth_service
+    host: auth_upstream
+    port: 80
+    protocol: http
+    routes:
+      - name: auth
+        paths:
+          - /auth
+        strip_path: false
+
+  - name: ingestion_service
+    host: ingestion_upstream
+    port: 80
+    protocol: http
+    routes:
+      - name: ingest
+        paths:
+          - /ingest
+        strip_path: false
+
+  - name: reports_service
+    host: reports_upstream
+    port: 80
+    protocol: http
+    routes:
+      - name: reports
+        paths:
+          - /reports
+        strip_path: false
+
+  - name: adapters_service
+    host: adapters_upstream
+    port: 80
+    protocol: http
+    routes:
+      - name: adapters
+        paths:
+          - /adapters
+        strip_path: false
+
+upstreams:
+  - name: auth_upstream
+    targets:
+      - target: <AUTH_HOST>:3000
+        weight: 100
+
+  - name: ingestion_upstream
+    targets:
+      - target: <INGESTION_HOST>:8080
+        weight: 100
+
+  - name: reports_upstream
+    targets:
+      - target: <REPORTS_HOST>:8080
+        weight: 100
+
+  - name: adapters_upstream
+    targets:
+      - target: <ADAPTERS_HOST>:8080
+        weight: 100

@@ -1,0 +1,40 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: reports-service
+  datasource:
+    url: jdbc:postgresql://${REPORTS_DB_HOST:localhost}:${REPORTS_DB_PORT:5432}/${REPORTS_DB_NAME:reports_db}
+    username: ${REPORTS_DB_USER:reports_user}
+    password: ${REPORTS_DB_PASSWORD:isis2503}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+  cache:
+    type: redis
+    redis:
+      time-to-live: ${REPORTS_CACHE_TTL_MS:60000}
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+opticloud:
+  cache:
+    queries: reports-queries
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,caches

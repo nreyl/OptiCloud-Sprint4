@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opticloud.local/schemas/raw-report.json",
+  "title": "RawCloudReport",
+  "type": "object",
+  "required": ["companyCode", "provider", "periodStart", "periodEnd", "rawLines"],
+  "properties": {
+    "companyCode": { "type": "string", "minLength": 1 },
+    "provider": { "type": "string", "enum": ["aws", "azure", "gcp"] },
+    "accountId": { "type": "string" },
+    "periodStart": { "type": "string", "format": "date-time" },
+    "periodEnd": { "type": "string", "format": "date-time" },
+    "source": { "type": "string" },
+    "rawLines": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "object" }
+    }
+  },
+  "additionalProperties": true
+}

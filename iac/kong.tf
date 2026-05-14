@@ -1,0 +1,44 @@
+# =====================================================================
+# Kong API Gateway (DB-less). Reads kong.yaml from the repository and
+# substitutes the upstream placeholders with the private IPs that the
+# rest of the stack just received.
+# =====================================================================
+resource "aws_instance" "kong" {
+  ami                         = local.ami_id
+  instance_type               = var.instance_type
+  associate_public_ip_address = true
+  key_name                    = var.key_name != "" ? var.key_name : null
+  vpc_security_group_ids      = [aws_security_group.kong.id, aws_security_group.ssh.id]
+
+  user_data = <<-EOT
+    #!/bin/bash
+    ${local.install_docker}
+    ${local.clone_repo}
+    cd /labs/OptiCloud-Sprint4/kong
+
+    sudo sed -i "s/<AUTH_HOST>/${aws_instance.auth_service.private_ip}/g" kong.yaml
+    sudo sed -i "s/<INGESTION_HOST>/${aws_instance.data_injestion.private_ip}/g" kong.yaml
+    sudo sed -i "s/<REPORTS_HOST>/${aws_instance.reports_service.private_ip}/g" kong.yaml
+    sudo sed -i "s/<ADAPTERS_HOST>/${aws_instance.cloud_adapter.private_ip}/g" kong.yaml
+
+    docker network create kong-net || true
+    docker run -d --restart=always --name kong --network=kong-net \
+      -v "$(pwd):/kong/declarative/" \
+      -e "KONG_DATABASE=off" \
+      -e "KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yaml" \
+      -p 8000:8000 \
+      kong/kong-gateway:3.7
+  EOT
+
+  depends_on = [
+    aws_instance.auth_service,
+    aws_instance.data_injestion,
+    aws_instance.reports_service,
+    aws_instance.cloud_adapter,
+  ]
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_prefix}-kong"
+    Role = "api-gateway"
+  })
+}

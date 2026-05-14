@@ -1,0 +1,48 @@
+# ---------- secrets / env ----------
+.env
+*.env
+!.env.example
+*.tfvars
+!*.tfvars.example
+
+# ---------- Node (auth-service) ----------
+node_modules/
+dist/
+npm-debug.log*
+yarn-error.log*
+
+# ---------- Python (data-injestion, cloud-adapter, notification-service) ----------
+__pycache__/
+*.py[cod]
+*.sqlite3
+venv/
+.venv/
+*.egg-info/
+
+# ---------- Java / Maven (reports-service, normalization-service) ----------
+target/
+*.class
+.mvn/
+mvnw
+mvnw.cmd
+
+# ---------- Terraform ----------
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ---------- IDE / OS ----------
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# ---------- logs ----------
+*.log
