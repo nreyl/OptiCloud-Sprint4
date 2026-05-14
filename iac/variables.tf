@@ -10,16 +10,20 @@ variable "project_prefix" {
   default     = "opticloud"
 }
 
+# t2.small = 1 vCPU / 2 GB RAM. The whole stack is 11 instances; at 1 vCPU
+# each that is 11 vCPU, which fits the default 16-vCPU "Standard instances"
+# quota of a fresh AWS account. Every t3.* size is 2 vCPU, so t3 would need
+# 22 vCPU and a quota increase.
 variable "instance_type" {
-  description = "EC2 instance type for application hosts."
+  description = "EC2 instance type for application hosts (1 vCPU keeps the stack within a 16-vCPU account quota)."
   type        = string
-  default     = "t3.small"
+  default     = "t2.small"
 }
 
 variable "db_instance_type" {
   description = "EC2 instance type for database hosts."
   type        = string
-  default     = "t3.small"
+  default     = "t2.small"
 }
 
 variable "key_name" {

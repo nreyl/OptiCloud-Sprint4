@@ -127,11 +127,12 @@ terraform plan      # expect ~11 instances + 6 security groups
 terraform apply     # type 'yes'
 ```
 
-> **vCPU quota?** 11 × `t3.small` = 22 vCPU. Brand-new AWS accounts sometimes
-> ship with a low "Running On-Demand Standard instances" quota — if `apply`
-> fails with a `VcpuLimitExceeded` error, either request a quota increase in
-> *Service Quotas → EC2*, or drop the instance size:
-> `terraform apply -var instance_type=t3.micro -var db_instance_type=t3.micro`
+> **vCPU quota.** The stack is 11 instances. The default `t2.small`
+> (1 vCPU each) totals 11 vCPU, which fits the default 16-vCPU
+> "Running On-Demand Standard instances" quota of a fresh AWS account.
+> Note that every `t3.*` size is 2 vCPU — switching `t3` sizes does **not**
+> help; only the `t2` family offers 1-vCPU options. If you still hit
+> `VcpuLimitExceeded`, request an increase in *Service Quotas → EC2*.
 
 ### Step 6 · Wait for the VMs to finish building (~8–12 min)
 
