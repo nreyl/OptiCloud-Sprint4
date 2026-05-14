@@ -64,14 +64,21 @@ git push origin main
 git push origin appmod/java-upgrade-20260514162644
 ```
 
-### Step 1 · Start the AWS Academy lab
+### Step 1 · Open a working environment
 
-1. AWS Academy → your course → Learner Lab → **Start Lab**, wait for the green dot.
-2. Click **AWS** to open the console, then open **CloudShell** (the `>_` icon).
-3. Verify credentials: `aws sts get-caller-identity`. If it errors, paste the
-   "AWS CLI" snippet from Academy's *AWS Details* into `~/.aws/credentials`.
+Use **CloudShell** (the `>_` icon in the AWS console top bar) — it already has
+your account credentials and `git`/`aws` preinstalled. A local terminal works
+too if you have run `aws configure` with an IAM user's access keys.
 
-### Step 2 · Install Terraform in CloudShell
+```bash
+aws sts get-caller-identity   # confirms you are authenticated
+aws configure get region      # confirms a default region is set (or run: aws configure)
+```
+
+### Step 2 · Install Terraform
+
+CloudShell does not ship Terraform; `install_terraform.sh` installs it via
+`tfenv`. (Skip this step if you already have Terraform on a local machine.)
 
 ```bash
 cd ~
@@ -120,7 +127,10 @@ terraform plan      # expect ~11 instances + 6 security groups
 terraform apply     # type 'yes'
 ```
 
-> **vCPU limit?** 11 × `t3.small` = 22 vCPU. If Academy rejects it, drop down:
+> **vCPU quota?** 11 × `t3.small` = 22 vCPU. Brand-new AWS accounts sometimes
+> ship with a low "Running On-Demand Standard instances" quota — if `apply`
+> fails with a `VcpuLimitExceeded` error, either request a quota increase in
+> *Service Quotas → EC2*, or drop the instance size:
 > `terraform apply -var instance_type=t3.micro -var db_instance_type=t3.micro`
 
 ### Step 6 · Wait for the VMs to finish building (~8–12 min)
@@ -191,10 +201,14 @@ Resource names: `kong`, `auth_service`, `reports_service`, `normalization_servic
 `cloud_adapter`, `data_injestion`, `notification_service`, `postgres_reports`,
 `postgres_adapter`, `mongo_auth`, `redis`.
 
-> **Note for AWS Academy LabRole**: the Terraform uses plain EC2 + Docker for
-> every datastore (instead of RDS) because RDS is restricted in the academy
-> environment. Swapping `aws_instance.postgres_reports`/`postgres_adapter` for
-> `aws_db_instance` is mechanical if you have permissions.
+> **Datastores run as EC2 + Docker**, not managed services: the two PostgreSQL
+> instances, MongoDB and Redis each run their official image in Docker on a
+> dedicated EC2. The deployment diagram shows them as RDS — on a standard AWS
+> account RDS is available, so swapping `aws_instance.postgres_reports` /
+> `postgres_adapter` for `aws_db_instance` (with a DB subnet group) is a
+> mechanical change if you want the deployment to match the diagram 1:1.
+> The EC2 + Docker form is kept here because it provisions in seconds instead
+> of minutes and keeps the whole stack uniform.
 
 ## How the data flows
 
