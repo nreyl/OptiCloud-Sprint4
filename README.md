@@ -143,3 +143,79 @@ curl "http://KONG_IP:8000/reports/queries/companies/ACME/summary?from=2026-05-01
 | PostgreSQL `postgresql-reports` | `iac/databases.tf::postgres_reports` |
 | PostgreSQL `postgresql-adapter` | `iac/databases.tf::postgres_adapter` |
 | Redis `caché de reportes pre-calculados` | `iac/databases.tf::redis` + `reports-service/.../config/CacheConfig.java` |
+
+## Testing the ASRs
+
+The three Sprint 4 ASRs are validated with a **hybrid** approach: JMeter for the
+quantitative thresholds, `curl` for the functional behaviour. Files live in
+`testing/`.
+
+### JMeter — quantitative thresholds
+
+`testing/opticloud-asr-tests.jmx` contains three thread groups plus a `setUp`
+that seeds users and one report. Edit the `KONG_IP` variable inside the plan (or
+override on the CLI) and run headless:
+
+```bash
+cd testing
+jmeter -n -t opticloud-asr-tests.jmx \
+       -JKONG_IP=<kong-public-ip> \
+       -l results.jtl -e -o reporte-html
+# open reporte-html/index.html for the dashboard
+```
+
+Thread counts are JMeter variables so you can ramp up without editing the plan,
+e.g. `-JASR1_THREADS=1000`.
+
+| Thread group | ASR | What it measures | Pass criterion |
+| --- | --- | --- | --- |
+| `ASR1 - Latencia` | ASR 1 | `GET /reports/queries/companies/ACME/reports` under load; run twice to see the Redis cache effect (cold vs warm) | p99 ≤ 100 ms (Duration Assertion) |
+| `ASR2 - Seguridad` | ASR 2 | `GET /auth/company/BETA/check` with an ACME token → CompanyGuard must block | HTTP 403 **and** block time < 500 ms |
+| `ASR3 - Modificabilidad` | ASR 3 | latency baseline of the `adapter → normalization → reports` pipeline (`POST /adapters/trigger`) | run before/after adding a new adapter; delta ≤ 100 ms |
+
+> **Honest note on ASR 1.** The target is 5.000 concurrent users at ≤ 100 ms.
+> The IaC deploys each service on a single `t3.small` with single-node
+> PostgreSQL/Redis — that hardware will *not* sustain 5.000@100 ms. The test
+> still produces the architecturally relevant evidence (cache-hit latency
+> collapses vs cache-miss, proving the CQRS + Redis design), and the report
+> should state the measured ceiling and argue that horizontal scaling behind an
+> ELB reaches the target. Don't fake the number.
+
+### curl — functional behaviour (ASR 2 & ASR 3)
+
+JMeter proves the *timing*; these prove the *behaviour*. Replace `KONG_IP`.
+
+**ASR 2 — detect, block, log, notify:**
+```bash
+# 1. login as a user of company ACME
+TOKEN=$(curl -s -X POST http://KONG_IP:8000/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"attacker","password":"Passw0rd!"}' | jq -r .access_token)
+
+# 2. try to reach a resource of company BETA with ACME's token → expect 403
+curl -i http://KONG_IP:8000/auth/company/BETA/check \
+  -H "Authorization: Bearer $TOKEN"
+
+# 3. evidence is persisted: connect to mongo-auth and check the collection
+#    (ssh into the mongo-auth EC2, then:)
+docker exec -it mongo-auth mongosh opticloud_auth \
+  --eval 'db.unauthorized_access_logs.find().sort({occurredAt:-1}).limit(3)'
+
+# 4. notification: check the notification-service container logs for the
+#    dispatched incident (Email Dispatcher logs when SMTP is not configured)
+docker logs notification-service | grep "Security incident"
+```
+
+**ASR 3 — add a provider without touching existing services:**
+1. Create `services/cloud-adapter/adapters/gcp.py` with a `GcpAdapter(BaseCloudAdapter)`
+   implementing only `fetch_raw_lines()`.
+2. Register it in `adapters/registry.py` (one line: `"gcp": GcpAdapter`).
+3. `git diff --stat` must show **only** those two files changed — no other
+   service touched. That is the modifiability evidence.
+4. Rebuild/redeploy only the `cloud-adapter` instance
+   (`terraform taint aws_instance.cloud_adapter && terraform apply`); the other
+   10 instances stay `Up` → no downtime.
+5. Re-run the `ASR3` JMeter thread group and compare the latency delta.
+
+The `Normalizer` in `normalization-service` already ships `normalizeGcp()` and
+`normalizeAzure()` branches, so the normalization side needs no change either.
