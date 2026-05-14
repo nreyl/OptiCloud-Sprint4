@@ -54,7 +54,7 @@ builds the relevant image and runs it with the right environment variables
 cd iac
 terraform init
 terraform apply \
-  -var "repository_url=https://github.com/<your-user>/OptiCloud-Sprint4.git" \
+  -var "repository_url=https://github.com/nreyl/OptiCloud-Sprint4.git" \
   -var "repository_branch=main" \
   -var "jwt_secret=$(openssl rand -hex 32)"
 ```
