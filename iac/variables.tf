@@ -15,15 +15,15 @@ variable "project_prefix" {
 # quota of a fresh AWS account. Every t3.* size is 2 vCPU, so t3 would need
 # 22 vCPU and a quota increase.
 variable "instance_type" {
-  description = "EC2 instance type for application hosts (1 vCPU keeps the stack within a 16-vCPU account quota)."
+  description = "EC2 instance type for application hosts (free-tier eligible t2.micro recommended for AWS Academy lab environments)."
   type        = string
-  default     = "t2.small"
+  default     = "t2.micro"
 }
 
 variable "db_instance_type" {
-  description = "EC2 instance type for database hosts."
+  description = "EC2 instance type for database hosts (free-tier eligible t2.micro recommended for AWS Academy lab environments)."
   type        = string
-  default     = "t2.small"
+  default     = "t2.micro"
 }
 
 variable "key_name" {
