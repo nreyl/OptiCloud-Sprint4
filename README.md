@@ -43,72 +43,158 @@ client ─► Kong (8000)
 | `kong/kong.yaml`                  | Kong DB-less config used by the AWS deployment (placeholders for IPs) |
 | `iac/`                            | Terraform scripts that deploy every service + every datastore + Kong in AWS |
 
-## Deploying to AWS (Terraform)
+## Deploying to AWS — step by step
 
 The IaC under `iac/` provisions one EC2 instance per microservice and one
-EC2 instance per datastore. Every VM installs Docker, clones this repo,
-builds the relevant image and runs it with the right environment variables
-(private IPs are wired in by Terraform).
+EC2 instance per datastore (11 instances total). Every VM installs Docker,
+clones this repo, builds the relevant image and runs it; private IPs are
+wired between services by Terraform.
+
+### Step 0 · Publish the repo
+
+The EC2 instances `git clone` over HTTPS with no credentials, so the repo
+must be **public**. Push the branch you want to deploy:
 
 ```bash
-cd iac
+# deploy main
+git checkout main && git merge appmod/java-upgrade-20260514162644
+git push origin main
+
+# ...or deploy the feature branch as-is (set repository_branch accordingly later)
+git push origin appmod/java-upgrade-20260514162644
+```
+
+### Step 1 · Start the AWS Academy lab
+
+1. AWS Academy → your course → Learner Lab → **Start Lab**, wait for the green dot.
+2. Click **AWS** to open the console, then open **CloudShell** (the `>_` icon).
+3. Verify credentials: `aws sts get-caller-identity`. If it errors, paste the
+   "AWS CLI" snippet from Academy's *AWS Details* into `~/.aws/credentials`.
+
+### Step 2 · Install Terraform in CloudShell
+
+```bash
+cd ~
+git clone https://github.com/nreyl/OptiCloud-Sprint4.git
+cd OptiCloud-Sprint4
+bash install_terraform.sh
+terraform --version
+```
+
+### Step 3 · Create an SSH key pair
+
+Needed to read logs on the VMs and for the ASR 2 functional test.
+
+```bash
+cd ~/OptiCloud-Sprint4/iac
+aws ec2 create-key-pair --key-name opticloud-key \
+  --query 'KeyMaterial' --output text > opticloud-key.pem
+chmod 400 opticloud-key.pem
+```
+
+### Step 4 · Configure variables
+
+Create `iac/terraform.tfvars` (git-ignored, so secrets stay out of the repo):
+
+```bash
+cd ~/OptiCloud-Sprint4/iac
+cat > terraform.tfvars <<EOF
+repository_url    = "https://github.com/nreyl/OptiCloud-Sprint4.git"
+repository_branch = "main"
+key_name          = "opticloud-key"
+jwt_secret        = "$(openssl rand -hex 32)"
+postgres_password = "isis2503"
+EOF
+cat terraform.tfvars
+```
+
+> If you deployed the feature branch in Step 0, set
+> `repository_branch = "appmod/java-upgrade-20260514162644"`.
+
+### Step 5 · Deploy
+
+```bash
+cd ~/OptiCloud-Sprint4/iac
 terraform init
-terraform apply \
-  -var "repository_url=https://github.com/nreyl/OptiCloud-Sprint4.git" \
-  -var "repository_branch=main" \
-  -var "jwt_secret=$(openssl rand -hex 32)"
+terraform plan      # expect ~11 instances + 6 security groups
+terraform apply     # type 'yes'
 ```
 
-When `apply` finishes Terraform prints the Kong public IP — that's the entry
-point for all four routes (`/auth`, `/ingest`, `/reports`, `/adapters`).
+> **vCPU limit?** 11 × `t3.small` = 22 vCPU. If Academy rejects it, drop down:
+> `terraform apply -var instance_type=t3.micro -var db_instance_type=t3.micro`
 
-To destroy the deployment afterwards:
+### Step 6 · Wait for the VMs to finish building (~8–12 min)
+
+Creating the EC2 is fast, but each VM then installs Docker, clones the repo
+and **builds its image** (the two Spring Boot services are the slow ones).
+Watch one instance:
 
 ```bash
-cd iac
-terraform destroy
+terraform output reports_service_public_ip
+ssh -i opticloud-key.pem ubuntu@<PUBLIC_IP>
+sudo tail -f /var/log/cloud-init-output.log   # Ctrl+C to stop
+docker ps                                     # "Up" means that service is ready
+exit
 ```
+
+### Step 7 · Get the entry point
+
+```bash
+terraform output                       # all IPs
+KONG=$(terraform output -raw kong_public_ip)
+echo $KONG
+```
+
+### Step 8 · Smoke test (from CloudShell)
+
+```bash
+curl http://$KONG:8000/auth/health
+curl http://$KONG:8000/ingest/health
+curl http://$KONG:8000/reports/queries/health
+curl http://$KONG:8000/adapters/health
+
+# full flow: register -> login -> register cloud account -> trigger -> query
+curl -X POST http://$KONG:8000/auth/register -H 'Content-Type: application/json' \
+  -d '{"username":"nico","password":"secret123","companyCode":"ACME","companyName":"Acme Corp"}'
+
+curl -X POST http://$KONG:8000/auth/login -H 'Content-Type: application/json' \
+  -d '{"username":"nico","password":"secret123"}'
+
+curl -X POST http://$KONG:8000/adapters/accounts -H 'Content-Type: application/json' \
+  -d '{"company_code":"ACME","provider":"aws","account_id":"123456789012","region":"us-east-1"}'
+
+curl -X POST http://$KONG:8000/adapters/trigger -H 'Content-Type: application/json' \
+  -d '{"account_id":1,"period_start":"2026-05-01T00:00:00Z","period_end":"2026-05-02T00:00:00Z"}'
+
+curl "http://$KONG:8000/reports/queries/companies/ACME/reports"
+curl "http://$KONG:8000/reports/queries/companies/ACME/summary?from=2026-05-01T00:00:00Z&to=2026-05-31T00:00:00Z"
+```
+
+A **502** on a `/health` means that container is still building or retrying —
+wait and retry (services run with `--restart=always`, they self-heal once
+their database is reachable).
+
+### Step 9 · Tear down (when finished — it burns credits)
+
+```bash
+cd ~/OptiCloud-Sprint4/iac
+terraform destroy      # type 'yes'
+```
+
+Recreate a single broken VM without destroying everything:
+
+```bash
+terraform taint aws_instance.<name>   # e.g. aws_instance.kong
+terraform apply
+```
+Resource names: `kong`, `auth_service`, `reports_service`, `normalization_service`,
+`cloud_adapter`, `data_injestion`, `notification_service`, `postgres_reports`,
+`postgres_adapter`, `mongo_auth`, `redis`.
 
 > **Note for AWS Academy LabRole**: the Terraform uses plain EC2 + Docker for
 > every datastore (instead of RDS) because RDS is restricted in the academy
 > environment. Swapping `aws_instance.postgres_reports`/`postgres_adapter` for
 > `aws_db_instance` is mechanical if you have permissions.
-
-## Smoke tests
-
-Replace `KONG_IP` with the `kong_public_ip` output Terraform printed.
-
-```bash
-# Health checks through Kong
-curl http://KONG_IP:8000/auth/health
-curl http://KONG_IP:8000/ingest/health
-curl http://KONG_IP:8000/reports/queries/health
-curl http://KONG_IP:8000/adapters/health
-
-# Register + login
-curl -X POST http://KONG_IP:8000/auth/register \
-     -H 'Content-Type: application/json' \
-     -d '{"username":"nico","password":"secret123","companyCode":"ACME","companyName":"Acme Corp"}'
-
-curl -X POST http://KONG_IP:8000/auth/login \
-     -H 'Content-Type: application/json' \
-     -d '{"username":"nico","password":"secret123"}'
-
-# Register an AWS account in the adapter, then trigger a synthetic run
-curl -X POST http://KONG_IP:8000/adapters/accounts \
-     -H 'Content-Type: application/json' \
-     -d '{"company_code":"ACME","provider":"aws","account_id":"123456789012","region":"us-east-1"}'
-
-curl -X POST http://KONG_IP:8000/adapters/trigger \
-     -H 'Content-Type: application/json' \
-     -d '{"account_id":1,
-          "period_start":"2026-05-01T00:00:00Z",
-          "period_end":"2026-05-02T00:00:00Z"}'
-
-# Read what landed in reports
-curl "http://KONG_IP:8000/reports/queries/companies/ACME/reports"
-curl "http://KONG_IP:8000/reports/queries/companies/ACME/summary?from=2026-05-01T00:00:00Z&to=2026-05-31T00:00:00Z"
-```
 
 ## How the data flows
 
@@ -153,8 +239,20 @@ quantitative thresholds, `curl` for the functional behaviour. Files live in
 ### JMeter — quantitative thresholds
 
 `testing/opticloud-asr-tests.jmx` contains three thread groups plus a `setUp`
-that seeds users and one report. Edit the `KONG_IP` variable inside the plan (or
-override on the CLI) and run headless:
+that seeds users and one report.
+
+**1 · Install JMeter** (on your local machine — CloudShell is headless/ephemeral;
+JMeter needs Java, already covered by the JDK you build the services with):
+
+```bash
+choco install jmeter      # Windows
+# or: brew install jmeter            (macOS)
+# or download the zip from https://jmeter.apache.org/download_jmeter.cgi
+jmeter --version
+```
+
+**2 · Run headless** from the `testing/` folder (relative path to `companies.csv`),
+passing the Kong IP on the CLI — no need to edit the `.jmx`:
 
 ```bash
 cd testing
@@ -164,8 +262,14 @@ jmeter -n -t opticloud-asr-tests.jmx \
 # open reporte-html/index.html for the dashboard
 ```
 
-Thread counts are JMeter variables so you can ramp up without editing the plan,
-e.g. `-JASR1_THREADS=1000`.
+`-n` = no-GUI (the correct mode for measuring); `-e -o reporte-html` generates
+the HTML dashboard with percentiles — that is the deliverable artifact.
+
+**3 · Ramp up.** Thread counts are JMeter variables, so you scale without editing
+the plan: `-JASR1_THREADS=1000`, `-JASR2_THREADS=100`, etc.
+
+**4 · Debug (GUI mode, never for measuring).** If a request fails, open the plan
+in the GUI, add a *View Results Tree*, run small: `jmeter -t opticloud-asr-tests.jmx`.
 
 | Thread group | ASR | What it measures | Pass criterion |
 | --- | --- | --- | --- |
