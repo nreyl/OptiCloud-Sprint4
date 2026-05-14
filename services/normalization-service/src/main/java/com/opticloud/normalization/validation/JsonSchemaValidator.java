@@ -1,5 +1,12 @@
 package com.opticloud.normalization.validation;
 
+import java.io.InputStream;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonSchema;
@@ -8,11 +15,6 @@ import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 
 import jakarta.annotation.PostConstruct;
-import java.io.InputStream;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Component;
 
 @Component
 public class JsonSchemaValidator {
