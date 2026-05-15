@@ -1,9 +1,12 @@
 # OptiCloud — Sprint 4
 
 Implementation of the OptiCloud Sprint 4 component and deployment architecture:
-six microservices behind a Kong API Gateway, with per-service databases
-(PostgreSQL, MongoDB, Redis), deployed on AWS via Terraform — one EC2 instance
-per service and per datastore, exactly as drawn in the deployment diagram.
+six microservices behind a Kong API Gateway with per-service databases
+(PostgreSQL on RDS, MongoDB + Redis on a shared EC2), deployed on AWS via
+Terraform — one EC2 per microservice, one EC2 for Kong, one EC2 for Mongo +
+Redis, and two managed RDS PostgreSQL instances (8 EC2 + 2 RDS).
+
+**Current versions:** Java 25 LTS, Spring Boot 3.5.6, Terraform AWS provider.
 
 ## Architecture at a glance
 
@@ -45,10 +48,18 @@ client ─► Kong (8000)
 
 ## Deploying to AWS — step by step
 
-The IaC under `iac/` provisions one EC2 instance per microservice and one
-EC2 instance per datastore (11 instances total). Every VM installs Docker,
-clones this repo, builds the relevant image and runs it; private IPs are
-wired between services by Terraform.
+The IaC under `iac/` provisions:
+
+- **6 EC2** — one per microservice (auth, notification, data-injestion,
+  cloud-adapter, normalization, reports).
+- **1 EC2** — Kong API Gateway.
+- **1 EC2** — Mongo + Redis colocated (RDS does not offer those engines).
+- **2 RDS `db.t3.micro`** — managed PostgreSQL for reports and cloud-adapter.
+
+Totals: **8 EC2** (16 vCPU at `t2.small`/`t3.micro`, fits a 16-vCPU
+account quota) **+ 2 RDS** (separate quota pool). Every EC2 installs Docker,
+clones this repo, builds the relevant image and runs it; the RDS endpoints
+and private IPs are wired in by Terraform.
 
 ### Step 0 · Publish the repo
 
@@ -56,12 +67,9 @@ The EC2 instances `git clone` over HTTPS with no credentials, so the repo
 must be **public**. Push the branch you want to deploy:
 
 ```bash
-# deploy main
-git checkout main && git merge appmod/java-upgrade-20260514162644
+# deploy main (includes Java 25 upgrade and t3.micro instances)
+git checkout main
 git push origin main
-
-# ...or deploy the feature branch as-is (set repository_branch accordingly later)
-git push origin appmod/java-upgrade-20260514162644
 ```
 
 ### Step 1 · Open a working environment
@@ -115,24 +123,25 @@ EOF
 cat terraform.tfvars
 ```
 
-> If you deployed the feature branch in Step 0, set
-> `repository_branch = "appmod/java-upgrade-20260514162644"`.
+> If you deployed a feature branch, set
+> `repository_branch = "your-feature-branch"`.
 
 ### Step 5 · Deploy
 
 ```bash
 cd ~/OptiCloud-Sprint4/iac
 terraform init
-terraform plan      # expect ~11 instances + 6 security groups
+terraform plan      # expect 8 EC2 + 2 RDS + 6 security groups + 1 DB subnet group
 terraform apply     # type 'yes'
 ```
 
-> **vCPU quota.** The stack is 11 instances. The default `t2.small`
-> (1 vCPU each) totals 11 vCPU, which fits the default 16-vCPU
-> "Running On-Demand Standard instances" quota of a fresh AWS account.
-> Note that every `t3.*` size is 2 vCPU — switching `t3` sizes does **not**
-> help; only the `t2` family offers 1-vCPU options. If you still hit
-> `VcpuLimitExceeded`, request an increase in *Service Quotas → EC2*.
+> **vCPU quota.** The stack is **8 EC2 instances**. At `t2.small` (1 vCPU
+> each, default) that totals 8 vCPU; at `t3.micro` (2 vCPU each, Free-Tier-
+> eligible) that totals 16 vCPU — both fit the default 16-vCPU "Running
+> On-Demand Standard instances" quota of a fresh AWS account. The 2 RDS
+> instances run on a **separate RDS quota** and do not consume EC2 vCPU.
+> If you still hit `VcpuLimitExceeded`, request an increase in
+> *Service Quotas → EC2*.
 
 ### Step 6 · Wait for the VMs to finish building (~8–12 min)
 
@@ -198,18 +207,20 @@ Recreate a single broken VM without destroying everything:
 terraform taint aws_instance.<name>   # e.g. aws_instance.kong
 terraform apply
 ```
-Resource names: `kong`, `auth_service`, `reports_service`, `normalization_service`,
-`cloud_adapter`, `data_injestion`, `notification_service`, `postgres_reports`,
-`postgres_adapter`, `mongo_auth`, `redis`.
+EC2 resource names (for `terraform taint aws_instance.<name>`): `kong`,
+`auth_service`, `reports_service`, `normalization_service`, `cloud_adapter`,
+`data_injestion`, `notification_service`, `datastores`.
 
-> **Datastores run as EC2 + Docker**, not managed services: the two PostgreSQL
-> instances, MongoDB and Redis each run their official image in Docker on a
-> dedicated EC2. The deployment diagram shows them as RDS — on a standard AWS
-> account RDS is available, so swapping `aws_instance.postgres_reports` /
-> `postgres_adapter` for `aws_db_instance` (with a DB subnet group) is a
-> mechanical change if you want the deployment to match the diagram 1:1.
-> The EC2 + Docker form is kept here because it provisions in seconds instead
-> of minutes and keeps the whole stack uniform.
+RDS resource names (use `aws_db_instance.<name>`): `postgres_reports`,
+`postgres_adapter`.
+
+> **Datastore layout.** The two PostgreSQL databases are managed RDS
+> (`db.t3.micro`) — they match the deployment diagram and do not consume EC2
+> vCPU. MongoDB and Redis are colocated on a single EC2 (`aws_instance.datastores`)
+> because RDS does not offer those engines and DocumentDB/ElastiCache are not
+> Free-Tier-eligible. RDS provisioning takes a few minutes longer than EC2 —
+> expect ~5–10 min for `postgres_reports` and `postgres_adapter` to become
+> available during `apply`.
 
 ## How the data flows
 
@@ -240,10 +251,10 @@ Resource names: `kong`, `auth_service`, `reports_service`, `normalization_servic
 | `cloud-adapter (Django)` with BaseCloudAdapter + adapter-aws | `services/cloud-adapter/adapters/` |
 | `normalization-service.jar (Spring Boot)` with JSON Schema Validator + Report Forwarder | `services/normalization-service/src/main/java/com/opticloud/normalization/` |
 | `reports-service.jar (Spring Boot, CQRS)` with CommandService + QueryService | `services/reports-service/src/main/java/com/opticloud/reports/` |
-| MongoDB (`Colección de logs de accesos no autorizados`) | `iac/databases.tf::mongo_auth` + `auth-service/src/access-log/` |
-| PostgreSQL `postgresql-reports` | `iac/databases.tf::postgres_reports` |
-| PostgreSQL `postgresql-adapter` | `iac/databases.tf::postgres_adapter` |
-| Redis `caché de reportes pre-calculados` | `iac/databases.tf::redis` + `reports-service/.../config/CacheConfig.java` |
+| MongoDB (`Colección de logs de accesos no autorizados`) | `iac/databases.tf::aws_instance.datastores` (Docker) + `auth-service/src/access-log/` |
+| PostgreSQL `postgresql-reports` (RDS) | `iac/databases.tf::aws_db_instance.postgres_reports` |
+| PostgreSQL `postgresql-adapter` (RDS) | `iac/databases.tf::aws_db_instance.postgres_adapter` |
+| Redis `caché de reportes pre-calculados` | `iac/databases.tf::aws_instance.datastores` (Docker) + `reports-service/.../config/CacheConfig.java` |
 
 ## Testing the ASRs
 

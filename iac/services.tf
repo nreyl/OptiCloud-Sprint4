@@ -60,14 +60,14 @@ resource "aws_instance" "auth_service" {
     docker run -d --restart=always --name auth-service \
       -p 3000:3000 \
       -e PORT=3000 \
-      -e MONGO_URI=mongodb://${aws_instance.mongo_auth.private_ip}:27017/opticloud_auth \
+      -e MONGO_URI=mongodb://${aws_instance.datastores.private_ip}:27017/opticloud_auth \
       -e JWT_SECRET=${var.jwt_secret} \
       -e JWT_TTL_SECONDS=3600 \
       -e NOTIFICATION_URL=http://${aws_instance.notification_service.private_ip}:8080/notifications \
       opticloud/auth-service
   EOT
 
-  depends_on = [aws_instance.mongo_auth, aws_instance.notification_service]
+  depends_on = [aws_instance.datastores, aws_instance.notification_service]
 
   tags = merge(local.common_tags, {
     Name = "${var.project_prefix}-auth-service"
@@ -94,18 +94,18 @@ resource "aws_instance" "reports_service" {
     docker run -d --restart=always --name reports-service \
       -p 8080:8080 \
       -e SERVER_PORT=8080 \
-      -e REPORTS_DB_HOST=${aws_instance.postgres_reports.private_ip} \
+      -e REPORTS_DB_HOST=${aws_db_instance.postgres_reports.address} \
       -e REPORTS_DB_PORT=5432 \
       -e REPORTS_DB_NAME=reports_db \
       -e REPORTS_DB_USER=reports_user \
       -e REPORTS_DB_PASSWORD=${var.postgres_password} \
-      -e REDIS_HOST=${aws_instance.redis.private_ip} \
+      -e REDIS_HOST=${aws_instance.datastores.private_ip} \
       -e REDIS_PORT=6379 \
       -e REPORTS_CACHE_TTL_MS=60000 \
       opticloud/reports-service
   EOT
 
-  depends_on = [aws_instance.postgres_reports, aws_instance.redis]
+  depends_on = [aws_db_instance.postgres_reports, aws_instance.datastores]
 
   tags = merge(local.common_tags, {
     Name = "${var.project_prefix}-reports-service"
@@ -163,7 +163,7 @@ resource "aws_instance" "cloud_adapter" {
     docker build -t opticloud/cloud-adapter .
     docker run -d --restart=always --name cloud-adapter \
       -p 8080:8080 \
-      -e ADAPTER_DB_HOST=${aws_instance.postgres_adapter.private_ip} \
+      -e ADAPTER_DB_HOST=${aws_db_instance.postgres_adapter.address} \
       -e ADAPTER_DB_PORT=5432 \
       -e ADAPTER_DB_NAME=adapter_db \
       -e ADAPTER_DB_USER=adapter_user \
@@ -172,7 +172,7 @@ resource "aws_instance" "cloud_adapter" {
       opticloud/cloud-adapter
   EOT
 
-  depends_on = [aws_instance.postgres_adapter, aws_instance.normalization_service]
+  depends_on = [aws_db_instance.postgres_adapter, aws_instance.normalization_service]
 
   tags = merge(local.common_tags, {
     Name = "${var.project_prefix}-cloud-adapter"

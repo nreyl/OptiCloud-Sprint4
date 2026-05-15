@@ -15,7 +15,22 @@ output "cloud_adapter_public_ip"        { value = aws_instance.cloud_adapter.pub
 output "normalization_service_public_ip"{ value = aws_instance.normalization_service.public_ip }
 output "reports_service_public_ip"      { value = aws_instance.reports_service.public_ip }
 
-output "postgres_reports_private_ip" { value = aws_instance.postgres_reports.private_ip }
-output "postgres_adapter_private_ip" { value = aws_instance.postgres_adapter.private_ip }
-output "mongo_auth_private_ip"       { value = aws_instance.mongo_auth.private_ip }
-output "redis_private_ip"            { value = aws_instance.redis.private_ip }
+output "postgres_reports_endpoint" {
+  description = "RDS endpoint (host) for reports-service."
+  value       = aws_db_instance.postgres_reports.address
+}
+
+output "postgres_adapter_endpoint" {
+  description = "RDS endpoint (host) for cloud-adapter."
+  value       = aws_db_instance.postgres_adapter.address
+}
+
+output "datastores_public_ip" {
+  description = "Public IP of the EC2 hosting MongoDB and Redis."
+  value       = aws_instance.datastores.public_ip
+}
+
+output "datastores_private_ip" {
+  description = "Private IP of the EC2 hosting MongoDB and Redis (consumed by auth-service and reports-service)."
+  value       = aws_instance.datastores.private_ip
+}
