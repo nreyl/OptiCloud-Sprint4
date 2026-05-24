@@ -3,6 +3,7 @@ package com.opticloud.reports.command;
 import com.opticloud.reports.domain.Report;
 import com.opticloud.reports.domain.ReportLine;
 import com.opticloud.reports.domain.ReportRepository;
+import com.opticloud.reports.query.SpendSummaryService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,9 +17,11 @@ public class CommandService {
     private static final Logger log = LoggerFactory.getLogger(CommandService.class);
 
     private final ReportRepository repository;
+    private final SpendSummaryService spendSummary;
 
-    public CommandService(ReportRepository repository) {
+    public CommandService(ReportRepository repository, SpendSummaryService spendSummary) {
         this.repository = repository;
+        this.spendSummary = spendSummary;
     }
 
     @Transactional
@@ -45,6 +48,7 @@ public class CommandService {
         Report saved = repository.save(report);
         log.info("Stored report id={} company={} provider={} lines={}",
                 saved.getId(), saved.getCompanyCode(), saved.getProvider(), saved.getLines().size());
+        spendSummary.refresh();
         return saved;
     }
 
@@ -52,5 +56,6 @@ public class CommandService {
     @CacheEvict(value = "reports-queries", allEntries = true)
     public void deleteReport(java.util.UUID id) {
         repository.deleteById(id);
+        spendSummary.refresh();
     }
 }

@@ -19,7 +19,8 @@ resource "aws_instance" "kong" {
     sudo sed -i "s/<AUTH_HOST>/${aws_instance.auth_service.private_ip}/g" kong.yaml
     sudo sed -i "s/<INGESTION_HOST>/${aws_instance.data_injestion.private_ip}/g" kong.yaml
     sudo sed -i "s/<REPORTS_HOST>/${aws_instance.reports_service.private_ip}/g" kong.yaml
-    sudo sed -i "s/<ADAPTERS_HOST>/${aws_instance.cloud_adapter.private_ip}/g" kong.yaml
+    sudo sed -i "s/<ADAPTER_AWS_HOST>/${aws_instance.adapter_aws.private_ip}/g" kong.yaml
+    sudo sed -i "s|<JWT_SECRET>|${var.jwt_secret}|g" kong.yaml
 
     docker network create kong-net || true
     docker run -d --restart=always --name kong --network=kong-net \
@@ -34,7 +35,7 @@ resource "aws_instance" "kong" {
     aws_instance.auth_service,
     aws_instance.data_injestion,
     aws_instance.reports_service,
-    aws_instance.cloud_adapter,
+    aws_instance.adapter_aws,
   ]
 
   tags = merge(local.common_tags, {

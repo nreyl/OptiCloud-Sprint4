@@ -7,6 +7,13 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "change-me-in-prod")
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
+# Which cloud provider this container serves. The same image is deployed once
+# per provider (adapter-aws, adapter-gcp, ...); each instance is scoped to its
+# provider and exposed under /adapters/<provider>/* at the gateway. Adding a
+# provider is a new container with a different ADAPTER_PROVIDER, not a change
+# to any existing service (ASR 3 - Modificabilidad).
+ADAPTER_PROVIDER = os.environ.get("ADAPTER_PROVIDER", "aws").lower()
+
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",

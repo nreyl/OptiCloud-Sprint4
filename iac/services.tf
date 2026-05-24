@@ -102,6 +102,7 @@ resource "aws_instance" "reports_service" {
       -e REDIS_HOST=${aws_instance.datastores.private_ip} \
       -e REDIS_PORT=6379 \
       -e REPORTS_CACHE_TTL_MS=60000 \
+      -e REPORTS_JWT_SECRET=${var.jwt_secret} \
       opticloud/reports-service
   EOT
 
@@ -146,9 +147,14 @@ resource "aws_instance" "normalization_service" {
 }
 
 # -----------------------------------------------------------------
-# cloud-adapter (Django + Postgres)
+# adapter-aws — one cloud-adapter container per provider (ASR 3).
+# The same image runs scoped to its provider via ADAPTER_PROVIDER and is
+# exposed under /adapters/aws/* at Kong. Onboarding a new provider is the
+# commented adapter_gcp block below plus a Kong route — no existing
+# service/instance is modified, and the rollout adds a container in parallel
+# (downtime = 0).
 # -----------------------------------------------------------------
-resource "aws_instance" "cloud_adapter" {
+resource "aws_instance" "adapter_aws" {
   ami                         = local.ami_id
   instance_type               = var.instance_type
   associate_public_ip_address = true
@@ -161,8 +167,9 @@ resource "aws_instance" "cloud_adapter" {
     ${local.clone_repo}
     cd /labs/OptiCloud-Sprint4/services/cloud-adapter
     docker build -t opticloud/cloud-adapter .
-    docker run -d --restart=always --name cloud-adapter \
+    docker run -d --restart=always --name adapter-aws \
       -p 8080:8080 \
+      -e ADAPTER_PROVIDER=aws \
       -e ADAPTER_DB_HOST=${aws_db_instance.postgres_adapter.address} \
       -e ADAPTER_DB_PORT=5432 \
       -e ADAPTER_DB_NAME=adapter_db \
@@ -175,10 +182,48 @@ resource "aws_instance" "cloud_adapter" {
   depends_on = [aws_db_instance.postgres_adapter, aws_instance.normalization_service]
 
   tags = merge(local.common_tags, {
-    Name = "${var.project_prefix}-cloud-adapter"
-    Role = "cloud-adapter"
+    Name = "${var.project_prefix}-adapter-aws"
+    Role = "adapter-aws"
   })
 }
+
+# -----------------------------------------------------------------
+# adapter-gcp — template for onboarding a new provider. Uncomment, add the
+# GcpAdapter class + registry entry in services/cloud-adapter, and add the
+# matching Kong service/route/upstream. The blocks above stay untouched.
+# -----------------------------------------------------------------
+# resource "aws_instance" "adapter_gcp" {
+#   ami                         = local.ami_id
+#   instance_type               = var.instance_type
+#   associate_public_ip_address = true
+#   key_name                    = var.key_name != "" ? var.key_name : null
+#   vpc_security_group_ids      = [aws_security_group.apps_http.id, aws_security_group.ssh.id]
+#
+#   user_data = <<-EOT
+#     #!/bin/bash
+#     ${local.install_docker}
+#     ${local.clone_repo}
+#     cd /labs/OptiCloud-Sprint4/services/cloud-adapter
+#     docker build -t opticloud/cloud-adapter .
+#     docker run -d --restart=always --name adapter-gcp \
+#       -p 8080:8080 \
+#       -e ADAPTER_PROVIDER=gcp \
+#       -e ADAPTER_DB_HOST=${aws_db_instance.postgres_adapter.address} \
+#       -e ADAPTER_DB_PORT=5432 \
+#       -e ADAPTER_DB_NAME=adapter_db \
+#       -e ADAPTER_DB_USER=adapter_user \
+#       -e ADAPTER_DB_PASSWORD=${var.postgres_password} \
+#       -e NORMALIZATION_SERVICE_URL=http://${aws_instance.normalization_service.private_ip}:8080/normalize \
+#       opticloud/cloud-adapter
+#   EOT
+#
+#   depends_on = [aws_db_instance.postgres_adapter, aws_instance.normalization_service]
+#
+#   tags = merge(local.common_tags, {
+#     Name = "${var.project_prefix}-adapter-gcp"
+#     Role = "adapter-gcp"
+#   })
+# }
 
 # -----------------------------------------------------------------
 # data-injestion (Django)

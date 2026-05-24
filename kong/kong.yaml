@@ -11,6 +11,13 @@ services:
         paths:
           - /auth
         strip_path: false
+        # Rate limiting on the auth route throttles credential brute-force,
+        # which is the trigger behind the EXCESSIVE_FAILED_LOGIN incident (ASR 2).
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 120
+              policy: local
 
   - name: ingestion_service
     host: ingestion_upstream
@@ -27,20 +34,60 @@ services:
     port: 80
     protocol: http
     routes:
+      # Company-scoped queries require a valid, unexpired JWT at the gateway.
+      # This route's path is more specific than /reports, so Kong matches it
+      # first. The fine-grained company-match still happens in reports-service
+      # (CompanyAuthFilter). Health, commands and other reads stay on the open
+      # /reports route below; internal command calls bypass Kong entirely.
+      - name: reports_company_queries
+        paths:
+          - /reports/queries/companies
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              claims_to_verify:
+                - exp
       - name: reports
         paths:
           - /reports
         strip_path: false
 
-  - name: adapters_service
-    host: adapters_upstream
+  # One Kong service + upstream per cloud-adapter container, each on its own
+  # /adapters/<provider>/* path. Adding a provider (ASR 3) is appending a block
+  # here plus a matching container in iac/services.tf — no existing service
+  # definition is touched.
+  - name: adapter_aws_service
+    host: adapter_aws_upstream
     port: 80
     protocol: http
     routes:
-      - name: adapters
+      - name: adapter_aws
         paths:
-          - /adapters
+          - /adapters/aws
         strip_path: false
+
+  # To onboard GCP: deploy an adapter-gcp container (ADAPTER_PROVIDER=gcp) and
+  # uncomment this block. Nothing above changes.
+  # - name: adapter_gcp_service
+  #   host: adapter_gcp_upstream
+  #   port: 80
+  #   protocol: http
+  #   routes:
+  #     - name: adapter_gcp
+  #       paths:
+  #         - /adapters/gcp
+  #       strip_path: false
+
+# Consumer holding the HMAC secret Kong uses to verify the JWTs that
+# auth-service signs (issuer claim "opticloud"). The <JWT_SECRET> placeholder
+# is substituted with the real secret by iac/kong.tf at deploy time.
+consumers:
+  - username: opticloud-clients
+    jwt_secrets:
+      - key: opticloud
+        algorithm: HS256
+        secret: "<JWT_SECRET>"
 
 upstreams:
   - name: auth_upstream
@@ -58,7 +105,12 @@ upstreams:
       - target: <REPORTS_HOST>:8080
         weight: 100
 
-  - name: adapters_upstream
+  - name: adapter_aws_upstream
     targets:
-      - target: <ADAPTERS_HOST>:8080
+      - target: <ADAPTER_AWS_HOST>:8080
         weight: 100
+
+  # - name: adapter_gcp_upstream
+  #   targets:
+  #     - target: <ADAPTER_GCP_HOST>:8080
+  #       weight: 100

@@ -2,6 +2,8 @@ package com.opticloud.reports.web;
 
 import com.opticloud.reports.query.QueryService;
 import com.opticloud.reports.query.ReportView;
+import com.opticloud.reports.query.SpendSummaryService;
+import com.opticloud.reports.query.SpendSummaryView;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -16,14 +18,22 @@ import org.springframework.web.bind.annotation.*;
 public class QueryController {
 
     private final QueryService queries;
+    private final SpendSummaryService spendSummary;
 
-    public QueryController(QueryService queries) {
+    public QueryController(QueryService queries, SpendSummaryService spendSummary) {
         this.queries = queries;
+        this.spendSummary = spendSummary;
     }
 
     @GetMapping("/health")
     public Map<String, String> health() {
         return Map.of("status", "ok", "service", "reports-service");
+    }
+
+    /** Pre-aggregated monthly spend served straight from the materialized view. */
+    @GetMapping("/companies/{company}/spend")
+    public List<SpendSummaryView> spend(@PathVariable String company) {
+        return spendSummary.byCompany(company);
     }
 
     @GetMapping("/reports/{id}")

@@ -18,7 +18,12 @@ import { User, UserSchema } from './user.schema';
     JwtModule.registerAsync({
       useFactory: () => ({
         secret: process.env.JWT_SECRET ?? 'change-me-in-prod',
-        signOptions: { expiresIn: `${process.env.JWT_TTL_SECONDS ?? '3600'}s` },
+        // issuer "opticloud" lets Kong's jwt plugin map the token to its
+        // registered consumer credential and verify the signature at the gateway.
+        signOptions: {
+          expiresIn: `${process.env.JWT_TTL_SECONDS ?? '3600'}s`,
+          issuer: process.env.JWT_ISSUER ?? 'opticloud',
+        },
       }),
     }),
     AccessLogModule,

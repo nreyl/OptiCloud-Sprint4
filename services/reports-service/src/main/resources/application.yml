@@ -32,6 +32,9 @@ spring:
 opticloud:
   cache:
     queries: reports-queries
+  jwt:
+    # Must match auth-service JWT_SECRET so the company guard can verify tokens.
+    secret: ${REPORTS_JWT_SECRET:change-me-in-prod}
 
 management:
   endpoints:

@@ -26,12 +26,19 @@ client ─► Kong (8000)
             │                       ├─► PostgreSQL  (writes via CommandService)
             │                       └─► Redis       (cache for QueryService)
             │
-            └─ /adapters/*   ─► cloud-adapter         (Django)
+            └─ /adapters/aws/* ─► adapter-aws         (Django, one per provider)
                                     │   ├─► PostgreSQL (audit & accounts)
                                     └─► normalization-service (Spring Boot)
                                             │   (JSON Schema Validator)
                                             └─► reports-service (Report Forwarder)
 ```
+
+> **On the "Orchestrator".** The component diagram draws an *Orquestador*
+> between the gateway and the services. In the implementation that role is
+> played by **Kong itself** — it is the single entry point that authenticates,
+> rate-limits and routes each request to the right service by path. There is no
+> separate orchestrator process to deploy; "Kong" and "Orquestador" are the
+> same box.
 
 ## Repository layout
 
@@ -171,23 +178,25 @@ echo $KONG
 curl http://$KONG:8000/auth/health
 curl http://$KONG:8000/ingest/health
 curl http://$KONG:8000/reports/queries/health
-curl http://$KONG:8000/adapters/health
+curl http://$KONG:8000/adapters/aws/health
 
 # full flow: register -> login -> register cloud account -> trigger -> query
 curl -X POST http://$KONG:8000/auth/register -H 'Content-Type: application/json' \
   -d '{"username":"nico","password":"secret123","companyCode":"ACME","companyName":"Acme Corp"}'
 
-curl -X POST http://$KONG:8000/auth/login -H 'Content-Type: application/json' \
-  -d '{"username":"nico","password":"secret123"}'
+# login and capture the token (company-scoped report queries require it)
+TOKEN=$(curl -s -X POST http://$KONG:8000/auth/login -H 'Content-Type: application/json' \
+  -d '{"username":"nico","password":"secret123"}' | jq -r .access_token)
 
-curl -X POST http://$KONG:8000/adapters/accounts -H 'Content-Type: application/json' \
+curl -X POST http://$KONG:8000/adapters/aws/accounts -H 'Content-Type: application/json' \
   -d '{"company_code":"ACME","provider":"aws","account_id":"123456789012","region":"us-east-1"}'
 
-curl -X POST http://$KONG:8000/adapters/trigger -H 'Content-Type: application/json' \
+curl -X POST http://$KONG:8000/adapters/aws/trigger -H 'Content-Type: application/json' \
   -d '{"account_id":1,"period_start":"2026-05-01T00:00:00Z","period_end":"2026-05-02T00:00:00Z"}'
 
-curl "http://$KONG:8000/reports/queries/companies/ACME/reports"
-curl "http://$KONG:8000/reports/queries/companies/ACME/summary?from=2026-05-01T00:00:00Z&to=2026-05-31T00:00:00Z"
+# company-scoped reads need the Bearer token (Kong jwt + CompanyAuthFilter)
+curl -H "Authorization: Bearer $TOKEN" "http://$KONG:8000/reports/queries/companies/ACME/reports"
+curl -H "Authorization: Bearer $TOKEN" "http://$KONG:8000/reports/queries/companies/ACME/spend"
 ```
 
 A **502** on a `/health` means that container is still building or retrying —
@@ -232,23 +241,35 @@ RDS resource names (use `aws_db_instance.<name>`): `postgres_reports`,
    canonical OptiCloud report to `POST /ingest/reports`; data-injestion
    forwards it to `reports-service` (`CommandService`).
 3. **Cloud-provider ingestion.** A client (or a scheduler) hits
-   `POST /adapters/trigger`; `cloud-adapter` fetches raw provider data,
+   `POST /adapters/aws/trigger`; `adapter-aws` fetches raw provider data,
    `BaseCloudAdapter` dispatches it to `normalization-service`. There it is
    validated against `raw-report.schema.json`, normalized into the canonical
    shape, and forwarded to `reports-service`.
 4. **Queries.** `GET /reports/queries/...` is served by `QueryService`,
    which uses Redis as a write-through cache. Every successful command in
-   `CommandService` evicts the cache.
+   `CommandService` evicts the cache. Company-scoped queries
+   (`/reports/queries/companies/{company}/**`) are protected twice: Kong's
+   `jwt` plugin rejects requests without a valid, unexpired token at the
+   gateway, and reports-service's `CompanyAuthFilter` then verifies the
+   token's `companyCode` claim matches the `{company}` in the path
+   (returns 403 on mismatch) — the JWT is decoded locally, no call to
+   auth-service, keeping the read within the latency budget.
+5. **Monthly spend (materialized view).** `GET /reports/queries/companies/{company}/spend`
+   returns pre-aggregated monthly spend per provider read from the
+   `company_spend_summary` **PostgreSQL materialized view** (`SpendSummaryService`).
+   `CommandService` runs `REFRESH MATERIALIZED VIEW` after every write, and the
+   read is itself cached in Redis — so the monthly report never recomputes the
+   aggregation on a request.
 
 ## Where the deployment diagram lives in the code
 
 | Diagram element | Implementation |
 | --- | --- |
-| Kong orchestrator + routes `/auth/*`, `/ingest/*`, `/reports/*`, `/adapters/*` | `kong/kong.yaml` + `iac/kong.tf` |
+| Kong orchestrator + routes `/auth/*`, `/ingest/*`, `/reports/*`, `/adapters/<provider>/*` | `kong/kong.yaml` + `iac/kong.tf` |
 | `auth-service.jar (NestJS)` with Company Guard, AccessLogWriter, JWT Strategy | `services/auth-service/src/` |
 | `notification-service (FastAPI)` with Security Incident Handler + Email Dispatcher | `services/notification-service/app/` |
 | `data-injestion (Django)` | `services/data-injestion/` |
-| `cloud-adapter (Django)` with BaseCloudAdapter + adapter-aws | `services/cloud-adapter/adapters/` |
+| `adapter-aws (Django)` — one cloud-adapter container per provider (BaseCloudAdapter chassis) | `services/cloud-adapter/adapters/` |
 | `normalization-service.jar (Spring Boot)` with JSON Schema Validator + Report Forwarder | `services/normalization-service/src/main/java/com/opticloud/normalization/` |
 | `reports-service.jar (Spring Boot, CQRS)` with CommandService + QueryService | `services/reports-service/src/main/java/com/opticloud/reports/` |
 | MongoDB (`Colección de logs de accesos no autorizados`) | `iac/databases.tf::aws_instance.datastores` (Docker) + `auth-service/src/access-log/` |
@@ -301,15 +322,15 @@ in the GUI, add a *View Results Tree*, run small: `jmeter -t opticloud-asr-tests
 | --- | --- | --- | --- |
 | `ASR1 - Latencia` | ASR 1 | `GET /reports/queries/companies/ACME/reports` under load; run twice to see the Redis cache effect (cold vs warm) | p99 ≤ 100 ms (Duration Assertion) |
 | `ASR2 - Seguridad` | ASR 2 | `GET /auth/company/BETA/check` with an ACME token → CompanyGuard must block | HTTP 403 **and** block time < 500 ms |
-| `ASR3 - Modificabilidad` | ASR 3 | latency baseline of the `adapter → normalization → reports` pipeline (`POST /adapters/trigger`) | run before/after adding a new adapter; delta ≤ 100 ms |
+| `ASR3 - Modificabilidad` | ASR 3 | latency baseline of the `adapter → normalization → reports` pipeline (`POST /adapters/aws/trigger`) | run before/after adding a new adapter; delta ≤ 100 ms |
 
 > **Honest note on ASR 1.** The target is 5.000 concurrent users at ≤ 100 ms.
-> The IaC deploys each service on a single `t3.small` with single-node
-> PostgreSQL/Redis — that hardware will *not* sustain 5.000@100 ms. The test
-> still produces the architecturally relevant evidence (cache-hit latency
-> collapses vs cache-miss, proving the CQRS + Redis design), and the report
-> should state the measured ceiling and argue that horizontal scaling behind an
-> ELB reaches the target. Don't fake the number.
+> The IaC deploys reports-service on a single `t3.micro` with one `db.t3.micro`
+> RDS and a single-node Redis — that hardware will *not* sustain 5.000@100 ms.
+> The test still produces the architecturally relevant evidence (cache-hit
+> latency collapses vs cache-miss, and the materialized view removes the
+> aggregation cost), and the report should state the measured ceiling and argue
+> that horizontal scaling behind an ELB reaches the target. Don't fake the number.
 
 ### curl — functional behaviour (ASR 2 & ASR 3)
 
@@ -340,12 +361,23 @@ docker logs notification-service | grep "Security incident"
 1. Create `services/cloud-adapter/adapters/gcp.py` with a `GcpAdapter(BaseCloudAdapter)`
    implementing only `fetch_raw_lines()`.
 2. Register it in `adapters/registry.py` (one line: `"gcp": GcpAdapter`).
-3. `git diff --stat` must show **only** those two files changed — no other
-   service touched. That is the modifiability evidence.
-4. Rebuild/redeploy only the `cloud-adapter` instance
-   (`terraform taint aws_instance.cloud_adapter && terraform apply`); the other
-   10 instances stay `Up` → no downtime.
-5. Re-run the `ASR3` JMeter thread group and compare the latency delta.
+3. Deploy a new **adapter-gcp** container in parallel: uncomment the
+   `aws_instance.adapter_gcp` block in `iac/services.tf` (same image,
+   `ADAPTER_PROVIDER=gcp`).
+4. Expose it: uncomment the `adapter_gcp` service/route and `adapter_gcp_upstream`
+   in `kong/kong.yaml`, and the `<ADAPTER_GCP_HOST>` sed line in `iac/kong.tf`.
+   The new route is `/adapters/gcp/*`; the `/adapters/aws/*` route is untouched.
+5. The existing 8 EC2 instances (including `adapter-aws`) and both RDS stay
+   `Up` while the new container comes online → **downtime = 0**.
+6. Re-run the `ASR3` JMeter thread group and compare the latency delta.
 
-The `Normalizer` in `normalization-service` already ships `normalizeGcp()` and
-`normalizeAzure()` branches, so the normalization side needs no change either.
+> **How extensibility works.** The same `cloud-adapter` image is deployed once
+> per provider, each container scoped by `ADAPTER_PROVIDER` and exposed under
+> its own `/adapters/<provider>/*` route in Kong. The `BaseCloudAdapter` chassis
+> (logging, health, validation, dispatch) is shared; a concrete provider only
+> implements `fetch_raw_lines()` and is added to `adapters/registry.py`. Adding
+> a provider is therefore a **new class + a new container + a new Kong route** —
+> no existing service definition, route, or instance changes, matching the
+> infographic's "one container per adapter, `/adapters/<provider>/*`". The
+> `Normalizer` in `normalization-service` already ships `normalizeGcp()` and
+> `normalizeAzure()`, so the normalization side needs no change either.
