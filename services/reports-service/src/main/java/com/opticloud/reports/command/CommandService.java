@@ -45,7 +45,10 @@ public class CommandService {
                     line.costAmount(),
                     line.costCurrency() != null ? line.costCurrency() : "USD"));
         }
-        Report saved = repository.save(report);
+        // Flush so the INSERT hits the DB before we REFRESH the materialized
+        // view (JdbcTemplate shares this transaction's connection): Hibernate
+        // otherwise defers the write to commit and the view would refresh empty.
+        Report saved = repository.saveAndFlush(report);
         log.info("Stored report id={} company={} provider={} lines={}",
                 saved.getId(), saved.getCompanyCode(), saved.getProvider(), saved.getLines().size());
         spendSummary.refresh();
@@ -56,6 +59,7 @@ public class CommandService {
     @CacheEvict(value = "reports-queries", allEntries = true)
     public void deleteReport(java.util.UUID id) {
         repository.deleteById(id);
+        repository.flush();
         spendSummary.refresh();
     }
 }
