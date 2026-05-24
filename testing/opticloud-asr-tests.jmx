@@ -10,58 +10,58 @@
         <collectionProp name="Arguments.arguments">
           <elementProp name="KONG_IP" elementType="Argument">
             <stringProp name="Argument.name">KONG_IP</stringProp>
-            <stringProp name="Argument.value">CHANGE_ME</stringProp>
+            <stringProp name="Argument.value">${__P(KONG_IP,CHANGE_ME)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="KONG_PORT" elementType="Argument">
             <stringProp name="Argument.name">KONG_PORT</stringProp>
-            <stringProp name="Argument.value">8000</stringProp>
+            <stringProp name="Argument.value">${__P(KONG_PORT,8000)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="ASR1_THREADS" elementType="Argument">
             <stringProp name="Argument.name">ASR1_THREADS</stringProp>
-            <stringProp name="Argument.value">200</stringProp>
+            <stringProp name="Argument.value">${__P(ASR1_THREADS,200)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
             <stringProp name="Argument.desc">ASR 1 pide 5000. Empieza en 200, sube gradualmente segun aguante el lab.</stringProp>
           </elementProp>
           <elementProp name="ASR1_RAMPUP" elementType="Argument">
             <stringProp name="Argument.name">ASR1_RAMPUP</stringProp>
-            <stringProp name="Argument.value">60</stringProp>
+            <stringProp name="Argument.value">${__P(ASR1_RAMPUP,60)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="ASR1_LOOPS" elementType="Argument">
             <stringProp name="Argument.name">ASR1_LOOPS</stringProp>
-            <stringProp name="Argument.value">20</stringProp>
+            <stringProp name="Argument.value">${__P(ASR1_LOOPS,20)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="ASR1_LATENCY_MS" elementType="Argument">
             <stringProp name="Argument.name">ASR1_LATENCY_MS</stringProp>
-            <stringProp name="Argument.value">100</stringProp>
+            <stringProp name="Argument.value">${__P(ASR1_LATENCY_MS,100)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="ASR2_THREADS" elementType="Argument">
             <stringProp name="Argument.name">ASR2_THREADS</stringProp>
-            <stringProp name="Argument.value">50</stringProp>
+            <stringProp name="Argument.value">${__P(ASR2_THREADS,50)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="ASR2_LOOPS" elementType="Argument">
             <stringProp name="Argument.name">ASR2_LOOPS</stringProp>
-            <stringProp name="Argument.value">10</stringProp>
+            <stringProp name="Argument.value">${__P(ASR2_LOOPS,10)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="ASR2_BLOCK_MS" elementType="Argument">
             <stringProp name="Argument.name">ASR2_BLOCK_MS</stringProp>
-            <stringProp name="Argument.value">500</stringProp>
+            <stringProp name="Argument.value">${__P(ASR2_BLOCK_MS,500)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="ASR3_THREADS" elementType="Argument">
             <stringProp name="Argument.name">ASR3_THREADS</stringProp>
-            <stringProp name="Argument.value">20</stringProp>
+            <stringProp name="Argument.value">${__P(ASR3_THREADS,20)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="ASR3_LOOPS" elementType="Argument">
             <stringProp name="Argument.name">ASR3_LOOPS</stringProp>
-            <stringProp name="Argument.value">10</stringProp>
+            <stringProp name="Argument.value">${__P(ASR3_LOOPS,10)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
         </collectionProp>
@@ -278,11 +278,11 @@
             <hashTree/>
           </hashTree>
         </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /reports/queries/companies/ACME/reports" enabled="true">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /reports/queries/companies/ACME/spend" enabled="true">
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
             <collectionProp name="Arguments.arguments"/>
           </elementProp>
-          <stringProp name="HTTPSampler.path">/reports/queries/companies/${companyCode}/reports</stringProp>
+          <stringProp name="HTTPSampler.path">/reports/queries/companies/${companyCode}/spend</stringProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
