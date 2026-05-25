@@ -39,12 +39,15 @@ public class CompanyAuthFilter extends OncePerRequestFilter {
             Pattern.compile("^/reports/queries/companies/([^/]+)(/.*)?$");
 
     private final SecretKey key;
+    private final IncidentReporter incidentReporter;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public CompanyAuthFilter(@Value("${opticloud.jwt.secret}") String secret) {
+    public CompanyAuthFilter(@Value("${opticloud.jwt.secret}") String secret,
+                             IncidentReporter incidentReporter) {
         // SecretKeySpec (instead of Keys.hmacShaKeyFor) so short dev secrets
         // signed by @nestjs/jwt do not trip jjwt's 256-bit key length check.
         this.key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        this.incidentReporter = incidentReporter;
     }
 
     @Override
@@ -75,6 +78,11 @@ public class CompanyAuthFilter extends OncePerRequestFilter {
 
         String tokenCompany = claims.get("companyCode", String.class);
         if (tokenCompany == null || !tokenCompany.equals(pathCompany)) {
+            // Fire the full ASR 2 chain (persist evidence + notify) asynchronously
+            // so the 403 still returns within the < 500 ms block budget.
+            incidentReporter.reportCompanyMismatch(
+                    claims.getSubject(), tokenCompany, pathCompany,
+                    request.getRemoteAddr(), request.getRequestURI(), request.getMethod());
             deny(response, 403, "COMPANY_MISMATCH",
                     "Token company '" + tokenCompany + "' cannot access company '" + pathCompany + "'");
             return;

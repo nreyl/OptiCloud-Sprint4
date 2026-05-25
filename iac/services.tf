@@ -103,10 +103,12 @@ resource "aws_instance" "reports_service" {
       -e REDIS_PORT=6379 \
       -e REPORTS_CACHE_TTL_MS=60000 \
       -e REPORTS_JWT_SECRET=${var.jwt_secret} \
+      -e MONGO_URI=mongodb://${aws_instance.datastores.private_ip}:27017/opticloud_auth \
+      -e NOTIFICATION_URL=http://${aws_instance.notification_service.private_ip}:8080/notifications \
       opticloud/reports-service
   EOT
 
-  depends_on = [aws_db_instance.postgres_reports, aws_instance.datastores]
+  depends_on = [aws_db_instance.postgres_reports, aws_instance.datastores, aws_instance.notification_service]
 
   tags = merge(local.common_tags, {
     Name = "${var.project_prefix}-reports-service"

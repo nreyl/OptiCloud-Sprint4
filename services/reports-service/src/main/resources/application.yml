@@ -21,6 +21,9 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: 2000ms
+    mongodb:
+      # Same MongoDB auth-service uses, for cross-company access evidence (ASR 2).
+      uri: ${MONGO_URI:mongodb://localhost:27017/opticloud_auth}
   cache:
     type: redis
     redis:
@@ -35,6 +38,8 @@ opticloud:
   jwt:
     # Must match auth-service JWT_SECRET so the company guard can verify tokens.
     secret: ${REPORTS_JWT_SECRET:change-me-in-prod}
+  notification:
+    base-url: ${NOTIFICATION_URL:http://localhost:8080/notifications}
 
 management:
   endpoints:

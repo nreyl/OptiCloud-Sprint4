@@ -7,17 +7,23 @@ services:
     port: 80
     protocol: http
     routes:
-      - name: auth
+      # Rate limiting ONLY on login (more specific path wins) throttles
+      # credential brute-force — the trigger behind EXCESSIVE_FAILED_LOGIN.
+      # The ASR 2 company check (/auth/company/...) stays unthrottled so the
+      # JMeter security test measures the 403 block time, not 429s.
+      - name: auth_login
         paths:
-          - /auth
+          - /auth/login
         strip_path: false
-        # Rate limiting on the auth route throttles credential brute-force,
-        # which is the trigger behind the EXCESSIVE_FAILED_LOGIN incident (ASR 2).
         plugins:
           - name: rate-limiting
             config:
               minute: 120
               policy: local
+      - name: auth
+        paths:
+          - /auth
+        strip_path: false
 
   - name: ingestion_service
     host: ingestion_upstream

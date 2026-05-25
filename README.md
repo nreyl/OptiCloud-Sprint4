@@ -336,25 +336,37 @@ in the GUI, add a *View Results Tree*, run small: `jmeter -t opticloud-asr-tests
 
 JMeter proves the *timing*; these prove the *behaviour*. Replace `KONG_IP`.
 
-**ASR 2 — detect, block, log, notify:**
+**ASR 2 — detect, block, log, notify.** Two endpoints trigger the full chain
+(block + MongoDB log + notification); pick whichever resource you want to show.
+
 ```bash
 # 1. login as a user of company ACME
 TOKEN=$(curl -s -X POST http://KONG_IP:8000/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"username":"attacker","password":"Passw0rd!"}' | jq -r .access_token)
 
-# 2. try to reach a resource of company BETA with ACME's token → expect 403
+# 2a. OPTION A — auth-service check endpoint (CompanyGuard → AccessLogWriter)
 curl -i http://KONG_IP:8000/auth/company/BETA/check \
   -H "Authorization: Bearer $TOKEN"
 
-# 3. evidence is persisted: connect to mongo-auth and check the collection
-#    (ssh into the mongo-auth EC2, then:)
+# 2b. OPTION B — a real report resource of company BETA (reports-service
+#     CompanyAuthFilter → IncidentReporter). More faithful to the ASR: the
+#     "resource" is an actual monthly report.
+curl -i http://KONG_IP:8000/reports/queries/companies/BETA/reports \
+  -H "Authorization: Bearer $TOKEN"
+
+# both must return HTTP 403 in < 500 ms
+
+# 3. evidence persisted in MongoDB — ssh into the datastores EC2
+#    (terraform output datastores_public_ip), then:
 docker exec -it mongo-auth mongosh opticloud_auth \
   --eval 'db.unauthorized_access_logs.find().sort({occurredAt:-1}).limit(3)'
+#    Option A logs via auth-service; Option B logs via reports-service —
+#    both land in the same unauthorized_access_logs collection.
 
 # 4. notification: check the notification-service container logs for the
 #    dispatched incident (Email Dispatcher logs when SMTP is not configured)
-docker logs notification-service | grep "Security incident"
+docker logs notification-service | grep -i "incident"
 ```
 
 **ASR 3 — add a provider without touching existing services:**
