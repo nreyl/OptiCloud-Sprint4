@@ -1,592 +1,328 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+<!-- ===================================================== -->
+<!-- ASR1A - CACHE MISS (POSTGRESQL) -->
+<!-- ===================================================== -->
+
+<ThreadGroup guiclass="ThreadGroupGui"
+testclass="ThreadGroup"
+testname="ASR1A - Cache MISS (PostgreSQL)">
+
+  <stringProp name="ThreadGroup.num_threads">${ASR1_THREADS}</stringProp>
+  <stringProp name="ThreadGroup.ramp_time">${ASR1_RAMPUP}</stringProp>
+
+  <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+
+  <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+
+  <elementProp name="ThreadGroup.main_controller"
+  elementType="LoopController"
+  guiclass="LoopControlPanel"
+  testclass="LoopController"
+  testname="Loop Controller">
+
+    <stringProp name="LoopController.loops">${ASR1_LOOPS}</stringProp>
+
+    <boolProp name="LoopController.continue_forever">false</boolProp>
+
+  </elementProp>
+
+</ThreadGroup>
+
+<hashTree>
+
+  <HTTPSamplerProxy
+  guiclass="HttpTestSampleGui"
+  testclass="HTTPSamplerProxy"
+  testname="GET Reports - Cache MISS">
+
+    <stringProp name="HTTPSampler.path">
+      /reports/queries/companies/ACME/reports
+    </stringProp>
+
+    <stringProp name="HTTPSampler.method">GET</stringProp>
+
+    <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+
+    <elementProp name="HTTPsampler.Arguments"
+    elementType="Arguments"
+    guiclass="HTTPArgumentsPanel"
+    testclass="Arguments"
+    testname="Variables definidas por el Usuario">
+
+      <collectionProp name="Arguments.arguments"/>
+
+    </elementProp>
+
+  </HTTPSamplerProxy>
+
   <hashTree>
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="OptiCloud Sprint 4 - ASR Tests">
-      <stringProp name="TestPlan.comments">Pruebas de carga de los 3 ASR de Sprint 4. Cambia KONG_IP en las User Defined Variables y corre:
-  jmeter -n -t opticloud-asr-tests.jmx -l results.jtl -e -o reporte-html</stringProp>
-      <boolProp name="TestPlan.serialize_threadgroups">true</boolProp>
-      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
-        <collectionProp name="Arguments.arguments">
-          <elementProp name="KONG_IP" elementType="Argument">
-            <stringProp name="Argument.name">KONG_IP</stringProp>
-            <stringProp name="Argument.value">${__P(KONG_IP,13.222.131.21)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="KONG_PORT" elementType="Argument">
-            <stringProp name="Argument.name">KONG_PORT</stringProp>
-            <stringProp name="Argument.value">8000</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="ASR1_THREADS" elementType="Argument">
-            <stringProp name="Argument.name">ASR1_THREADS</stringProp>
-            <stringProp name="Argument.value">${__P(ASR1_THREADS,500)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-            <stringProp name="Argument.desc">ASR 1 pide 5000. Empieza en 200, sube gradualmente segun aguante el lab.</stringProp>
-          </elementProp>
-          <elementProp name="ASR1_RAMPUP" elementType="Argument">
-            <stringProp name="Argument.name">ASR1_RAMPUP</stringProp>
-            <stringProp name="Argument.value">${__P(ASR1_RAMPUP,60)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="ASR1_LOOPS" elementType="Argument">
-            <stringProp name="Argument.name">ASR1_LOOPS</stringProp>
-            <stringProp name="Argument.value">${__P(ASR1_LOOPS,20)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="ASR1_LATENCY_MS" elementType="Argument">
-            <stringProp name="Argument.name">ASR1_LATENCY_MS</stringProp>
-            <stringProp name="Argument.value">${__P(ASR1_LATENCY_MS,100)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="ASR2_THREADS" elementType="Argument">
-            <stringProp name="Argument.name">ASR2_THREADS</stringProp>
-            <stringProp name="Argument.value">${__P(ASR2_THREADS,50)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="ASR2_LOOPS" elementType="Argument">
-            <stringProp name="Argument.name">ASR2_LOOPS</stringProp>
-            <stringProp name="Argument.value">${__P(ASR2_LOOPS,10)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="ASR2_BLOCK_MS" elementType="Argument">
-            <stringProp name="Argument.name">ASR2_BLOCK_MS</stringProp>
-            <stringProp name="Argument.value">${__P(ASR2_BLOCK_MS,500)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="ASR3_THREADS" elementType="Argument">
-            <stringProp name="Argument.name">ASR3_THREADS</stringProp>
-            <stringProp name="Argument.value">${__P(ASR3_THREADS,20)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="ASR3_LOOPS" elementType="Argument">
-            <stringProp name="Argument.name">ASR3_LOOPS</stringProp>
-            <stringProp name="Argument.value">${__P(ASR3_LOOPS,10)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-        </collectionProp>
-      </elementProp>
-    </TestPlan>
-    <hashTree>
-      <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults">
-        <intProp name="HTTPSampler.connect_timeout">5000</intProp>
-        <intProp name="HTTPSampler.response_timeout">10000</intProp>
-        <stringProp name="HTTPSampler.domain">${KONG_IP}</stringProp>
-        <stringProp name="HTTPSampler.port">${KONG_PORT}</stringProp>
-        <stringProp name="HTTPSampler.protocol">http</stringProp>
-        <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="Variables definidas por el Usuario">
-          <collectionProp name="Arguments.arguments"/>
+
+    <!-- AUTH HEADER -->
+
+    <HeaderManager
+    guiclass="HeaderPanel"
+    testclass="HeaderManager"
+    testname="Authorization">
+
+      <collectionProp name="HeaderManager.headers">
+
+        <elementProp name="" elementType="Header">
+
+          <stringProp name="Header.name">
+            Authorization
+          </stringProp>
+
+          <stringProp name="Header.value">
+            Bearer ${auth_token}
+          </stringProp>
+
         </elementProp>
-        <stringProp name="HTTPSampler.implementation"/>
-      </ConfigTestElement>
-      <hashTree/>
-      <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager - JSON" enabled="true">
-        <collectionProp name="HeaderManager.headers">
-          <elementProp name="" elementType="Header">
-            <stringProp name="Header.name">Content-Type</stringProp>
-            <stringProp name="Header.value">application/json</stringProp>
-          </elementProp>
-        </collectionProp>
-      </HeaderManager>
-      <hashTree/>
-      <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="CSV - companies.csv" enabled="true">
-        <stringProp name="filename">companies.csv</stringProp>
-        <stringProp name="fileEncoding">UTF-8</stringProp>
-        <stringProp name="variableNames">username,password,companyCode</stringProp>
-        <boolProp name="ignoreFirstLine">true</boolProp>
-        <stringProp name="delimiter">,</stringProp>
-        <boolProp name="quotedData">false</boolProp>
-        <boolProp name="recycle">true</boolProp>
-        <boolProp name="stopThread">false</boolProp>
-        <stringProp name="shareMode">shareMode.all</stringProp>
-      </CSVDataSet>
-      <hashTree/>
-      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="00 - Seed de datos">
-        <intProp name="ThreadGroup.num_threads">1</intProp>
-        <intProp name="ThreadGroup.ramp_time">1</intProp>
-        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
-        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
-        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">1</stringProp>
-          <boolProp name="LoopController.continue_forever">false</boolProp>
-        </elementProp>
-      </SetupThreadGroup>
-      <hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Register loadtester1 (ACME)" enabled="true">
-          <stringProp name="HTTPSampler.path">/auth/register</stringProp>
-          <stringProp name="HTTPSampler.method">POST</stringProp>
-          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
-            <collectionProp name="Arguments.arguments">
-              <elementProp name="" elementType="HTTPArgument">
-                <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{"username":"loadtester1","password":"Passw0rd!","companyCode":"ACME","companyName":"Acme Corp"}</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-              </elementProp>
-            </collectionProp>
-          </elementProp>
-        </HTTPSamplerProxy>
-        <hashTree/>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Register loadtester2 (ACME)" enabled="true">
-          <stringProp name="HTTPSampler.path">/auth/register</stringProp>
-          <stringProp name="HTTPSampler.method">POST</stringProp>
-          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
-            <collectionProp name="Arguments.arguments">
-              <elementProp name="" elementType="HTTPArgument">
-                <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{"username":"loadtester2","password":"Passw0rd!","companyCode":"ACME","companyName":"Acme Corp"}</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-              </elementProp>
-            </collectionProp>
-          </elementProp>
-        </HTTPSamplerProxy>
-        <hashTree/>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Register loadtester3 (ACME)" enabled="true">
-          <stringProp name="HTTPSampler.path">/auth/register</stringProp>
-          <stringProp name="HTTPSampler.method">POST</stringProp>
-          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
-            <collectionProp name="Arguments.arguments">
-              <elementProp name="" elementType="HTTPArgument">
-                <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{"username":"loadtester3","password":"Passw0rd!","companyCode":"ACME","companyName":"Acme Corp"}</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-              </elementProp>
-            </collectionProp>
-          </elementProp>
-        </HTTPSamplerProxy>
-        <hashTree/>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Register attacker (ACME)" enabled="true">
-          <stringProp name="HTTPSampler.path">/auth/register</stringProp>
-          <stringProp name="HTTPSampler.method">POST</stringProp>
-          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
-            <collectionProp name="Arguments.arguments">
-              <elementProp name="" elementType="HTTPArgument">
-                <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{"username":"attacker","password":"Passw0rd!","companyCode":"ACME","companyName":"Acme Corp"}</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-              </elementProp>
-            </collectionProp>
-          </elementProp>
-        </HTTPSamplerProxy>
-        <hashTree/>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Register victim (BETA)" enabled="true">
-          <stringProp name="HTTPSampler.path">/auth/register</stringProp>
-          <stringProp name="HTTPSampler.method">POST</stringProp>
-          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
-            <collectionProp name="Arguments.arguments">
-              <elementProp name="" elementType="HTTPArgument">
-                <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{"username":"victim","password":"Passw0rd!","companyCode":"BETA","companyName":"Beta Inc"}</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-              </elementProp>
-            </collectionProp>
-          </elementProp>
-        </HTTPSamplerProxy>
-        <hashTree/>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Login loadtester1" enabled="true">
-          <stringProp name="HTTPSampler.path">/auth/login</stringProp>
-          <stringProp name="HTTPSampler.method">POST</stringProp>
-          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
-            <collectionProp name="Arguments.arguments">
-              <elementProp name="" elementType="HTTPArgument">
-                <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{"username":"loadtester1","password":"Passw0rd!"}</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-              </elementProp>
-            </collectionProp>
-          </elementProp>
-        </HTTPSamplerProxy>
-        <hashTree>
-          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extraer jwt" enabled="true">
-            <stringProp name="JSONPostProcessor.referenceNames">seed_jwt</stringProp>
-            <stringProp name="JSONPostProcessor.jsonPathExprs">$.access_token</stringProp>
-            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
-          </JSONPostProcessor>
-          <hashTree/>
-          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Guardar token global (auth_token)" enabled="true">
-            <stringProp name="scriptLanguage">groovy</stringProp>
-            <stringProp name="script">props.put("auth_token", vars.get("seed_jwt"))</stringProp>
-          </JSR223PostProcessor>
-          <hashTree/>
-        </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Seed report (ingest ACME)" enabled="true">
-          <stringProp name="HTTPSampler.path">/ingest/reports</stringProp>
-          <stringProp name="HTTPSampler.method">POST</stringProp>
-          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
-            <collectionProp name="Arguments.arguments">
-              <elementProp name="" elementType="HTTPArgument">
-                <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{"company_code":"ACME","provider":"aws","period_start":"2026-05-01T00:00:00Z","period_end":"2026-05-31T23:59:59Z","lines":[{"service":"EC2","resource_id":"i-seed01","region":"us-east-1","usage_amount":720,"usage_unit":"Hrs","cost_amount":14.97,"cost_currency":"USD"}]}</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-              </elementProp>
-            </collectionProp>
-          </elementProp>
-        </HTTPSamplerProxy>
-        <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Authorization" enabled="true">
-            <collectionProp name="HeaderManager.headers">
-              <elementProp name="" elementType="Header">
-                <stringProp name="Header.name">Authorization</stringProp>
-                <stringProp name="Header.value">Bearer ${seed_jwt}</stringProp>
-              </elementProp>
-            </collectionProp>
-          </HeaderManager>
-          <hashTree/>
-        </hashTree>
-      </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="ASR1 - Latencia (consulta de reportes)">
-        <stringProp name="ThreadGroup.num_threads">${ASR1_THREADS}</stringProp>
-        <stringProp name="ThreadGroup.ramp_time">${ASR1_RAMPUP}</stringProp>
-        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
-        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
-        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">${ASR1_LOOPS}</stringProp>
-          <boolProp name="LoopController.continue_forever">false</boolProp>
-        </elementProp>
-      </ThreadGroup>
-      <hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /reports/queries/companies/ACME/spend">
-          <stringProp name="HTTPSampler.path">/reports/queries/companies/ACME/spend</stringProp>
-          <stringProp name="HTTPSampler.method">GET</stringProp>
-          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="Variables definidas por el Usuario">
-            <collectionProp name="Arguments.arguments"/>
-          </elementProp>
-        </HTTPSamplerProxy>
-        <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Authorization">
-            <collectionProp name="HeaderManager.headers">
-              <elementProp name="" elementType="Header">
-                <stringProp name="Header.name">Authorization</stringProp>
-                <stringProp name="Header.value">Bearer ${__P(auth_token)}</stringProp>
-              </elementProp>
-            </collectionProp>
-          </HeaderManager>
-          <hashTree/>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Codigo 200">
-            <collectionProp name="Asserion.test_strings">
-              <stringProp name="49586">200</stringProp>
-            </collectionProp>
-            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-            <boolProp name="Assertion.assume_success">false</boolProp>
-            <intProp name="Assertion.test_type">8</intProp>
-            <stringProp name="Assertion.custom_message"/>
-          </ResponseAssertion>
-          <hashTree/>
-          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Latencia &lt;= 100ms (ASR1)">
-            <stringProp name="DurationAssertion.duration">${ASR1_LATENCY_MS}</stringProp>
-          </DurationAssertion>
-          <hashTree/>
-        </hashTree>
-        <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Resumen ASR1">
-          <boolProp name="ResultCollector.error_logging">false</boolProp>
-          <objProp>
-            <name>saveConfig</name>
-            <value class="SampleSaveConfiguration">
-              <time>true</time>
-              <latency>true</latency>
-              <timestamp>true</timestamp>
-              <success>true</success>
-              <label>true</label>
-              <code>true</code>
-              <message>false</message>
-              <threadName>false</threadName>
-              <dataType>false</dataType>
-              <encoding>false</encoding>
-              <assertions>false</assertions>
-              <subresults>false</subresults>
-              <responseData>false</responseData>
-              <samplerData>false</samplerData>
-              <xml>false</xml>
-              <fieldNames>false</fieldNames>
-              <responseHeaders>false</responseHeaders>
-              <requestHeaders>false</requestHeaders>
-              <responseDataOnError>false</responseDataOnError>
-              <saveAssertionResultsFailureMessage>false</saveAssertionResultsFailureMessage>
-              <assertionsResultsToSave>0</assertionsResultsToSave>
-              <bytes>true</bytes>
-              <threadCounts>true</threadCounts>
-            </value>
-          </objProp>
-          <stringProp name="filename"/>
-        </ResultCollector>
-        <hashTree/>
-        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="Ver Árbol de Resultados">
-          <boolProp name="ResultCollector.error_logging">false</boolProp>
-          <objProp>
-            <name>saveConfig</name>
-            <value class="SampleSaveConfiguration">
-              <time>true</time>
-              <latency>true</latency>
-              <timestamp>true</timestamp>
-              <success>true</success>
-              <label>true</label>
-              <code>true</code>
-              <message>true</message>
-              <threadName>true</threadName>
-              <dataType>true</dataType>
-              <encoding>false</encoding>
-              <assertions>true</assertions>
-              <subresults>true</subresults>
-              <responseData>false</responseData>
-              <samplerData>false</samplerData>
-              <xml>false</xml>
-              <fieldNames>true</fieldNames>
-              <responseHeaders>false</responseHeaders>
-              <requestHeaders>false</requestHeaders>
-              <responseDataOnError>false</responseDataOnError>
-              <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
-              <assertionsResultsToSave>0</assertionsResultsToSave>
-              <bytes>true</bytes>
-              <sentBytes>true</sentBytes>
-              <url>true</url>
-              <threadCounts>true</threadCounts>
-              <idleTime>true</idleTime>
-              <connectTime>true</connectTime>
-            </value>
-          </objProp>
-          <stringProp name="filename"/>
-        </ResultCollector>
-        <hashTree/>
-      </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="ASR2 - Seguridad (acceso cross-empresa)" enabled="true">
-        <stringProp name="ThreadGroup.num_threads">${ASR2_THREADS}</stringProp>
-        <intProp name="ThreadGroup.ramp_time">10</intProp>
-        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
-        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
-        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">${ASR2_LOOPS}</stringProp>
-          <boolProp name="LoopController.continue_forever">false</boolProp>
-        </elementProp>
-      </ThreadGroup>
-      <hashTree>
-        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Login attacker (una vez por hilo)" enabled="true"/>
-        <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /auth/login (attacker@ACME)" enabled="true">
-            <stringProp name="HTTPSampler.path">/auth/login</stringProp>
-            <stringProp name="HTTPSampler.method">POST</stringProp>
-            <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
-              <collectionProp name="Arguments.arguments">
-                <elementProp name="" elementType="HTTPArgument">
-                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                  <stringProp name="Argument.value">{"username":"attacker","password":"Passw0rd!"}</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-              </collectionProp>
-            </elementProp>
-          </HTTPSamplerProxy>
-          <hashTree>
-            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extraer jwt" enabled="true">
-              <stringProp name="JSONPostProcessor.referenceNames">attacker_jwt</stringProp>
-              <stringProp name="JSONPostProcessor.jsonPathExprs">$.access_token</stringProp>
-              <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
-            </JSONPostProcessor>
-            <hashTree/>
-          </hashTree>
-        </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /auth/company/BETA/check (token de ACME)" enabled="true">
-          <stringProp name="HTTPSampler.path">/auth/company/BETA/check</stringProp>
-          <stringProp name="HTTPSampler.method">GET</stringProp>
-          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="Variables definidas por el Usuario">
-            <collectionProp name="Arguments.arguments"/>
-          </elementProp>
-        </HTTPSamplerProxy>
-        <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Authorization" enabled="true">
-            <collectionProp name="HeaderManager.headers">
-              <elementProp name="" elementType="Header">
-                <stringProp name="Header.name">Authorization</stringProp>
-                <stringProp name="Header.value">Bearer ${attacker_jwt}</stringProp>
-              </elementProp>
-            </collectionProp>
-          </HeaderManager>
-          <hashTree/>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Debe bloquear con 403" enabled="true">
-            <collectionProp name="Asserion.test_strings">
-              <stringProp name="51511">403</stringProp>
-            </collectionProp>
-            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-            <boolProp name="Assertion.assume_success">false</boolProp>
-            <intProp name="Assertion.test_type">8</intProp>
-            <stringProp name="Assertion.custom_message"/>
-          </ResponseAssertion>
-          <hashTree/>
-          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Bloqueo &lt; 500ms (ASR2)" enabled="true">
-            <stringProp name="DurationAssertion.duration">${ASR2_BLOCK_MS}</stringProp>
-          </DurationAssertion>
-          <hashTree/>
-        </hashTree>
-        <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Resumen ASR2" enabled="true">
-          <boolProp name="ResultCollector.error_logging">false</boolProp>
-          <objProp>
-            <name>saveConfig</name>
-            <value class="SampleSaveConfiguration">
-              <time>true</time>
-              <latency>true</latency>
-              <timestamp>true</timestamp>
-              <success>true</success>
-              <label>true</label>
-              <code>true</code>
-              <message>false</message>
-              <threadName>false</threadName>
-              <dataType>false</dataType>
-              <encoding>false</encoding>
-              <assertions>false</assertions>
-              <subresults>false</subresults>
-              <responseData>false</responseData>
-              <samplerData>false</samplerData>
-              <xml>false</xml>
-              <fieldNames>false</fieldNames>
-              <responseHeaders>false</responseHeaders>
-              <requestHeaders>false</requestHeaders>
-              <responseDataOnError>false</responseDataOnError>
-              <saveAssertionResultsFailureMessage>false</saveAssertionResultsFailureMessage>
-              <assertionsResultsToSave>0</assertionsResultsToSave>
-              <bytes>true</bytes>
-              <threadCounts>true</threadCounts>
-            </value>
-          </objProp>
-          <stringProp name="filename"/>
-        </ResultCollector>
-        <hashTree/>
-      </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="ASR3 - Modificabilidad (baseline pipeline adapters)" enabled="true">
-        <stringProp name="ThreadGroup.num_threads">${ASR3_THREADS}</stringProp>
-        <intProp name="ThreadGroup.ramp_time">10</intProp>
-        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
-        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
-        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">${ASR3_LOOPS}</stringProp>
-          <boolProp name="LoopController.continue_forever">false</boolProp>
-        </elementProp>
-      </ThreadGroup>
-      <hashTree>
-        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Crear cuenta cloud (una vez por hilo)" enabled="true"/>
-        <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /adapters/aws/accounts" enabled="true">
-            <stringProp name="HTTPSampler.path">/adapters/aws/accounts</stringProp>
-            <stringProp name="HTTPSampler.method">POST</stringProp>
-            <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
-              <collectionProp name="Arguments.arguments">
-                <elementProp name="" elementType="HTTPArgument">
-                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                  <stringProp name="Argument.value">{"company_code":"ACME","provider":"aws","account_id":"jmeter-${__threadNum}-${__time(YMDHMS)}-${__Random(1,999999)}","region":"us-east-1"}</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-              </collectionProp>
-            </elementProp>
-          </HTTPSamplerProxy>
-          <hashTree>
-            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extraer account_id" enabled="true">
-              <stringProp name="JSONPostProcessor.referenceNames">account_id</stringProp>
-              <stringProp name="JSONPostProcessor.jsonPathExprs">$.id</stringProp>
-              <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
-              <stringProp name="JSONPostProcessor.defaultValues">1</stringProp>
-            </JSONPostProcessor>
-            <hashTree/>
-          </hashTree>
-        </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /adapters/aws/trigger (adapter-&gt;normalization-&gt;reports)" enabled="true">
-          <stringProp name="HTTPSampler.path">/adapters/aws/trigger</stringProp>
-          <stringProp name="HTTPSampler.method">POST</stringProp>
-          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
-            <collectionProp name="Arguments.arguments">
-              <elementProp name="" elementType="HTTPArgument">
-                <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{"account_id":${account_id},"period_start":"2026-05-01T00:00:00Z","period_end":"2026-05-02T00:00:00Z"}</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-              </elementProp>
-            </collectionProp>
-          </elementProp>
-        </HTTPSamplerProxy>
-        <hashTree>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Codigo 200" enabled="true">
-            <collectionProp name="Asserion.test_strings">
-              <stringProp name="49586">200</stringProp>
-            </collectionProp>
-            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-            <boolProp name="Assertion.assume_success">false</boolProp>
-            <intProp name="Assertion.test_type">8</intProp>
-            <stringProp name="Assertion.custom_message"/>
-          </ResponseAssertion>
-          <hashTree/>
-        </hashTree>
-        <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Resumen ASR3" enabled="true">
-          <boolProp name="ResultCollector.error_logging">false</boolProp>
-          <objProp>
-            <name>saveConfig</name>
-            <value class="SampleSaveConfiguration">
-              <time>true</time>
-              <latency>true</latency>
-              <timestamp>true</timestamp>
-              <success>true</success>
-              <label>true</label>
-              <code>true</code>
-              <message>false</message>
-              <threadName>false</threadName>
-              <dataType>false</dataType>
-              <encoding>false</encoding>
-              <assertions>false</assertions>
-              <subresults>false</subresults>
-              <responseData>false</responseData>
-              <samplerData>false</samplerData>
-              <xml>false</xml>
-              <fieldNames>false</fieldNames>
-              <responseHeaders>false</responseHeaders>
-              <requestHeaders>false</requestHeaders>
-              <responseDataOnError>false</responseDataOnError>
-              <saveAssertionResultsFailureMessage>false</saveAssertionResultsFailureMessage>
-              <assertionsResultsToSave>0</assertionsResultsToSave>
-              <bytes>true</bytes>
-              <threadCounts>true</threadCounts>
-            </value>
-          </objProp>
-          <stringProp name="filename"/>
-        </ResultCollector>
-        <hashTree/>
-      </hashTree>
-      <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report (global)" enabled="true">
-        <boolProp name="ResultCollector.error_logging">false</boolProp>
-        <objProp>
-          <name>saveConfig</name>
-          <value class="SampleSaveConfiguration">
-            <time>true</time>
-            <latency>true</latency>
-            <timestamp>true</timestamp>
-            <success>true</success>
-            <label>true</label>
-            <code>true</code>
-            <message>false</message>
-            <threadName>false</threadName>
-            <dataType>false</dataType>
-            <encoding>false</encoding>
-            <assertions>false</assertions>
-            <subresults>false</subresults>
-            <responseData>false</responseData>
-            <samplerData>false</samplerData>
-            <xml>false</xml>
-            <fieldNames>false</fieldNames>
-            <responseHeaders>false</responseHeaders>
-            <requestHeaders>false</requestHeaders>
-            <responseDataOnError>false</responseDataOnError>
-            <saveAssertionResultsFailureMessage>false</saveAssertionResultsFailureMessage>
-            <assertionsResultsToSave>0</assertionsResultsToSave>
-            <bytes>true</bytes>
-            <threadCounts>true</threadCounts>
-          </value>
-        </objProp>
-        <stringProp name="filename"/>
-      </ResultCollector>
-      <hashTree/>
-    </hashTree>
+
+      </collectionProp>
+
+    </HeaderManager>
+
+    <hashTree/>
+
+    <!-- STATUS 200 -->
+
+    <ResponseAssertion
+    guiclass="AssertionGui"
+    testclass="ResponseAssertion"
+    testname="Codigo 200">
+
+      <collectionProp name="Asserion.test_strings">
+        <stringProp name="49586">200</stringProp>
+      </collectionProp>
+
+      <stringProp name="Assertion.test_field">
+        Assertion.response_code
+      </stringProp>
+
+      <boolProp name="Assertion.assume_success">
+        false
+      </boolProp>
+
+      <intProp name="Assertion.test_type">8</intProp>
+
+    </ResponseAssertion>
+
+    <hashTree/>
+
+    <!-- LATENCY ASSERTION -->
+
+    <DurationAssertion
+    guiclass="DurationAssertionGui"
+    testclass="DurationAssertion"
+    testname="Latencia <= 100ms">
+
+      <stringProp name="DurationAssertion.duration">
+        ${ASR1_LATENCY_MS}
+      </stringProp>
+
+    </DurationAssertion>
+
+    <hashTree/>
+
   </hashTree>
-</jmeterTestPlan>
+
+  <!-- SAVE RESULTS -->
+
+  <ResultCollector
+  guiclass="SimpleDataWriter"
+  testclass="ResultCollector"
+  testname="ASR1 MISS Results">
+
+    <stringProp name="filename">
+      asr1-cache-miss.jtl
+    </stringProp>
+
+  </ResultCollector>
+
+  <hashTree/>
+
+</hashTree>
+
+<!-- ===================================================== -->
+<!-- WAIT FOR REDIS CACHE WARMUP -->
+<!-- ===================================================== -->
+
+<TestAction
+guiclass="TestActionGui"
+testclass="TestAction"
+testname="Esperar warmup Redis">
+
+  <intProp name="ActionProcessor.action">1</intProp>
+
+  <intProp name="ActionProcessor.target">0</intProp>
+
+  <stringProp name="ActionProcessor.duration">
+    5000
+  </stringProp>
+
+</TestAction>
+
+<hashTree/>
+
+<!-- ===================================================== -->
+<!-- ASR1B - CACHE HIT (REDIS) -->
+<!-- ===================================================== -->
+
+<ThreadGroup
+guiclass="ThreadGroupGui"
+testclass="ThreadGroup"
+testname="ASR1B - Cache HIT (Redis)">
+
+  <stringProp name="ThreadGroup.num_threads">
+    ${ASR1_THREADS}
+  </stringProp>
+
+  <stringProp name="ThreadGroup.ramp_time">
+    ${ASR1_RAMPUP}
+  </stringProp>
+
+  <boolProp name="ThreadGroup.same_user_on_next_iteration">
+    true
+  </boolProp>
+
+  <stringProp name="ThreadGroup.on_sample_error">
+    continue
+  </stringProp>
+
+  <elementProp
+  name="ThreadGroup.main_controller"
+  elementType="LoopController"
+  guiclass="LoopControlPanel"
+  testclass="LoopController"
+  testname="Loop Controller">
+
+    <stringProp name="LoopController.loops">
+      ${ASR1_LOOPS}
+    </stringProp>
+
+    <boolProp name="LoopController.continue_forever">
+      false
+    </boolProp>
+
+  </elementProp>
+
+</ThreadGroup>
+
+<hashTree>
+
+  <HTTPSamplerProxy
+  guiclass="HttpTestSampleGui"
+  testclass="HTTPSamplerProxy"
+  testname="GET Reports - Cache HIT">
+
+    <stringProp name="HTTPSampler.path">
+      /reports/queries/companies/ACME/reports
+    </stringProp>
+
+    <stringProp name="HTTPSampler.method">
+      GET
+    </stringProp>
+
+    <boolProp name="HTTPSampler.postBodyRaw">
+      false
+    </boolProp>
+
+    <elementProp
+    name="HTTPsampler.Arguments"
+    elementType="Arguments"
+    guiclass="HTTPArgumentsPanel"
+    testclass="Arguments"
+    testname="Variables definidas por el Usuario">
+
+      <collectionProp name="Arguments.arguments"/>
+
+    </elementProp>
+
+  </HTTPSamplerProxy>
+
+  <hashTree>
+
+    <!-- AUTH -->
+
+    <HeaderManager
+    guiclass="HeaderPanel"
+    testclass="HeaderManager"
+    testname="Authorization">
+
+      <collectionProp name="HeaderManager.headers">
+
+        <elementProp name="" elementType="Header">
+
+          <stringProp name="Header.name">
+            Authorization
+          </stringProp>
+
+          <stringProp name="Header.value">
+            Bearer ${auth_token}
+          </stringProp>
+
+        </elementProp>
+
+      </collectionProp>
+
+    </HeaderManager>
+
+    <hashTree/>
+
+    <!-- STATUS ASSERT -->
+
+    <ResponseAssertion
+    guiclass="AssertionGui"
+    testclass="ResponseAssertion"
+    testname="Codigo 200">
+
+      <collectionProp name="Asserion.test_strings">
+        <stringProp name="49586">200</stringProp>
+      </collectionProp>
+
+      <stringProp name="Assertion.test_field">
+        Assertion.response_code
+      </stringProp>
+
+      <boolProp name="Assertion.assume_success">
+        false
+      </boolProp>
+
+      <intProp name="Assertion.test_type">8</intProp>
+
+    </ResponseAssertion>
+
+    <hashTree/>
+
+    <!-- LATENCY -->
+
+    <DurationAssertion
+    guiclass="DurationAssertionGui"
+    testclass="DurationAssertion"
+    testname="Latencia <= 100ms">
+
+      <stringProp name="DurationAssertion.duration">
+        ${ASR1_LATENCY_MS}
+      </stringProp>
+
+    </DurationAssertion>
+
+    <hashTree/>
+
+  </hashTree>
+
+  <!-- SAVE RESULTS -->
+
+  <ResultCollector
+  guiclass="SimpleDataWriter"
+  testclass="ResultCollector"
+  testname="ASR1 HIT Results">
+
+    <stringProp name="filename">
+      asr1-cache-hit.jtl
+    </stringProp>
+
+  </ResultCollector>
+
+  <hashTree/>
+
+</hashTree>
