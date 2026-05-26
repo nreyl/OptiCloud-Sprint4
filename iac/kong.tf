@@ -31,7 +31,7 @@ resource "aws_instance" "kong" {
     sudo sed -i "s/<AUTH_HOST>/${aws_instance.auth_service.private_ip}/g" kong.yaml
     sudo sed -i "s/<INGESTION_HOST>/${aws_instance.data_injestion.private_ip}/g" kong.yaml
     sudo sed -i "s|<REPORTS_TARGETS>|${local.reports_targets_yaml}|" kong.yaml
-    sudo sed -i "s/<ADAPTER_AWS_HOST>/${aws_instance.adapter_aws.private_ip}/g" kong.yaml
+    sudo sed -i "s/<ADAPTER_AWS_HOST>/${local.adapter_aws_ip}/g" kong.yaml
     sudo sed -i "s|<JWT_SECRET>|${var.jwt_secret}|g" kong.yaml
 
     docker network create kong-net || true

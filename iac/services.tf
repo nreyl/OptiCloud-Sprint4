@@ -10,12 +10,21 @@ locals {
       git clone --branch ${var.repository_branch} ${var.repository_url}
     fi
   EOT
+
+  # In loadtest_mode the services not on the ASR1 /spend path are scaled to 0
+  # (count below), so their private IPs may not exist. try() falls back to a
+  # dummy host: always-on services (auth, reports, kong) still render a valid
+  # env/config, and the disabled routes simply 502 during an ASR1-only run.
+  notification_url  = "http://${try(aws_instance.notification_service[0].private_ip, "127.0.0.1")}:8080/notifications"
+  normalization_url = "http://${try(aws_instance.normalization_service[0].private_ip, "127.0.0.1")}:8080/normalize"
+  adapter_aws_ip    = try(aws_instance.adapter_aws[0].private_ip, "127.0.0.1")
 }
 
 # -----------------------------------------------------------------
 # notification-service (FastAPI)
 # -----------------------------------------------------------------
 resource "aws_instance" "notification_service" {
+  count                       = var.loadtest_mode ? 0 : 1
   ami                         = local.ami_id
   instance_type               = var.cold_instance_type
   associate_public_ip_address = true
@@ -64,7 +73,7 @@ resource "aws_instance" "auth_service" {
       -e JWT_SECRET=${var.jwt_secret} \
       -e JWT_TTL_SECONDS=3600 \
       -e BCRYPT_ROUNDS=${var.bcrypt_rounds} \
-      -e NOTIFICATION_URL=http://${aws_instance.notification_service.private_ip}:8080/notifications \
+      -e NOTIFICATION_URL=${local.notification_url} \
       opticloud/auth-service
   EOT
 
@@ -106,7 +115,7 @@ resource "aws_instance" "reports_service" {
       -e REPORTS_CACHE_TTL_MS=3600000 \
       -e REPORTS_JWT_SECRET=${var.jwt_secret} \
       -e MONGO_URI=mongodb://${aws_instance.datastores.private_ip}:27017/opticloud_auth \
-      -e NOTIFICATION_URL=http://${aws_instance.notification_service.private_ip}:8080/notifications \
+      -e NOTIFICATION_URL=${local.notification_url} \
       opticloud/reports-service
   EOT
 
@@ -122,6 +131,7 @@ resource "aws_instance" "reports_service" {
 # normalization-service (Spring Boot)
 # -----------------------------------------------------------------
 resource "aws_instance" "normalization_service" {
+  count                       = var.loadtest_mode ? 0 : 1
   ami                         = local.ami_id
   instance_type               = var.cold_instance_type
   associate_public_ip_address = true
@@ -159,6 +169,7 @@ resource "aws_instance" "normalization_service" {
 # (downtime = 0).
 # -----------------------------------------------------------------
 resource "aws_instance" "adapter_aws" {
+  count                       = var.loadtest_mode ? 0 : 1
   ami                         = local.ami_id
   instance_type               = var.cold_instance_type
   associate_public_ip_address = true
@@ -179,7 +190,7 @@ resource "aws_instance" "adapter_aws" {
       -e ADAPTER_DB_NAME=adapter_db \
       -e ADAPTER_DB_USER=adapter_user \
       -e ADAPTER_DB_PASSWORD=${var.postgres_password} \
-      -e NORMALIZATION_SERVICE_URL=http://${aws_instance.normalization_service.private_ip}:8080/normalize \
+      -e NORMALIZATION_SERVICE_URL=${local.normalization_url} \
       opticloud/cloud-adapter
   EOT
 

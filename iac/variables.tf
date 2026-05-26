@@ -26,25 +26,39 @@ variable "db_instance_type" {
   default     = "t3.micro"
 }
 
-# Cold-path services (notification, normalization, adapter, ingestion) are idle
-# during the ASR1 latency test, so they run on 1-vCPU t2.micro. That frees
-# vCPU under the 16-vCPU account quota for the extra reports-service replicas
-# below. Budget: 4 cold (1 each) + auth/kong/datastores (2 each) + reports*3
-# (2 each) = 16 vCPU exactly.
+# Free-tier-restricted accounts only allow free-tier-eligible types, and in
+# this account/region that is t3.micro (2 vCPU) — t2.micro is rejected. So
+# every host is t3.micro and the 16-vCPU quota caps the stack at 8 instances.
+# To run 3 reports replicas (10 instances = 20 vCPU) we instead drop the
+# services not on the ASR1 /spend path via var.loadtest_mode below.
 variable "cold_instance_type" {
-  description = "EC2 instance type for services not on the ASR1 hot path (1 vCPU is enough; keeps the stack within the 16-vCPU quota)."
+  description = "EC2 instance type for services not on the ASR1 hot path."
   type        = string
-  default     = "t2.micro"
+  default     = "t3.micro"
 }
 
 # reports-service is horizontally scaled behind Kong's reports_upstream
-# (round-robin). 3 replicas is the ASR1 target topology. Raising this also
-# means adding a matching target placeholder is unnecessary — kong.tf renders
-# the upstream targets dynamically from this count.
+# (round-robin); kong.tf renders one upstream target per replica.
+#
+# vCPU budget (free-tier => every host is t3.micro = 2 vCPU; account quota 16):
+#   - Default (loadtest_mode = false): full 8-service stack + 1 replica = 16 vCPU.
+#   - ASR1 run  (loadtest_mode = true): notification/normalization/adapter off,
+#     leaving kong+auth+datastores+ingestion (8 vCPU) + reports*N. N=3 => 14 vCPU.
+# So 3 replicas REQUIRES loadtest_mode = true to stay under the 16-vCPU quota.
 variable "reports_replicas" {
-  description = "Number of reports-service instances load-balanced by Kong for ASR1 (read throughput)."
+  description = "Number of reports-service instances load-balanced by Kong for ASR1 (read throughput). Use 3 together with loadtest_mode=true."
   type        = number
-  default     = 3
+  default     = 1
+}
+
+# ASR1-only deploy: scale the services not on the /spend path (notification,
+# normalization, adapter) to 0 to free vCPU for extra reports replicas under
+# the 16-vCPU quota. data-injestion stays up because the JMeter seed posts the
+# report through POST /ingest/reports. ASR2/ASR3 are not exercised in this mode.
+variable "loadtest_mode" {
+  description = "When true, disable services not needed by ASR1 to free vCPU for reports replicas (breaks ASR2/ASR3 on this deploy)."
+  type        = bool
+  default     = false
 }
 
 variable "key_name" {

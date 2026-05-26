@@ -37,20 +37,20 @@ resource "aws_db_subnet_group" "default" {
 # PostgreSQL for reports-service (managed)
 # ---------------------------------------------------------------------
 resource "aws_db_instance" "postgres_reports" {
-  identifier             = "${var.project_prefix}-postgres-reports"
-  engine                 = "postgres"
-  instance_class         = "db.t3.micro"
-  allocated_storage      = 20
-  storage_type           = "gp2"
-  db_name                = "reports_db"
-  username               = "reports_user"
-  password               = var.postgres_password
-  db_subnet_group_name   = aws_db_subnet_group.default.name
-  vpc_security_group_ids = [aws_security_group.postgres.id]
-  publicly_accessible    = true
-  skip_final_snapshot    = true
+  identifier              = "${var.project_prefix}-postgres-reports"
+  engine                  = "postgres"
+  instance_class          = "db.t3.micro"
+  allocated_storage       = 20
+  storage_type            = "gp2"
+  db_name                 = "reports_db"
+  username                = "reports_user"
+  password                = var.postgres_password
+  db_subnet_group_name    = aws_db_subnet_group.default.name
+  vpc_security_group_ids  = [aws_security_group.postgres.id]
+  publicly_accessible     = true
+  skip_final_snapshot     = true
   backup_retention_period = 0
-  apply_immediately      = true
+  apply_immediately       = true
 
   tags = merge(local.common_tags, {
     Name = "${var.project_prefix}-postgres-reports"
@@ -62,20 +62,20 @@ resource "aws_db_instance" "postgres_reports" {
 # PostgreSQL for cloud-adapter (managed)
 # ---------------------------------------------------------------------
 resource "aws_db_instance" "postgres_adapter" {
-  identifier             = "${var.project_prefix}-postgres-adapter"
-  engine                 = "postgres"
-  instance_class         = "db.t3.micro"
-  allocated_storage      = 20
-  storage_type           = "gp2"
-  db_name                = "adapter_db"
-  username               = "adapter_user"
-  password               = var.postgres_password
-  db_subnet_group_name   = aws_db_subnet_group.default.name
-  vpc_security_group_ids = [aws_security_group.postgres.id]
-  publicly_accessible    = true
-  skip_final_snapshot    = true
+  identifier              = "${var.project_prefix}-postgres-adapter"
+  engine                  = "postgres"
+  instance_class          = "db.t3.micro"
+  allocated_storage       = 20
+  storage_type            = "gp2"
+  db_name                 = "adapter_db"
+  username                = "adapter_user"
+  password                = var.postgres_password
+  db_subnet_group_name    = aws_db_subnet_group.default.name
+  vpc_security_group_ids  = [aws_security_group.postgres.id]
+  publicly_accessible     = true
+  skip_final_snapshot     = true
   backup_retention_period = 0
-  apply_immediately      = true
+  apply_immediately       = true
 
   tags = merge(local.common_tags, {
     Name = "${var.project_prefix}-postgres-adapter"
