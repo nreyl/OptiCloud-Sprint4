@@ -1,5 +1,10 @@
 server:
   port: ${SERVER_PORT:8080}
+  tomcat:
+    threads:
+      max: ${TOMCAT_MAX_THREADS:400}
+    accept-count: ${TOMCAT_ACCEPT_COUNT:200}
+    max-connections: ${TOMCAT_MAX_CONNECTIONS:10000}
 
 spring:
   application:
@@ -8,6 +13,11 @@ spring:
     url: jdbc:postgresql://${REPORTS_DB_HOST:localhost}:${REPORTS_DB_PORT:5432}/${REPORTS_DB_NAME:reports_db}
     username: ${REPORTS_DB_USER:reports_user}
     password: ${REPORTS_DB_PASSWORD:isis2503}
+    # Warm-cache reads hit Redis, so the DB pool stays small. 3 replicas *
+    # 20 = 60 connections, under db.t3.micro's ~112 max_connections ceiling.
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL:20}
+      minimum-idle: ${HIKARI_MIN_IDLE:5}
   jpa:
     hibernate:
       ddl-auto: update

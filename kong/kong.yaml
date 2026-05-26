@@ -106,10 +106,11 @@ upstreams:
       - target: <INGESTION_HOST>:8080
         weight: 100
 
+  # Targets are rendered per reports-service replica by iac/kong.tf
+  # (var.reports_replicas) — Kong round-robins ASR1 reads across them.
   - name: reports_upstream
     targets:
-      - target: <REPORTS_HOST>:8080
-        weight: 100
+<REPORTS_TARGETS>
 
   - name: adapter_aws_upstream
     targets:

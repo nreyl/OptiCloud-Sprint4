@@ -8,12 +8,12 @@ output "kong_base_url" {
   value       = "http://${aws_instance.kong.public_ip}:8000"
 }
 
-output "auth_service_public_ip"          { value = aws_instance.auth_service.public_ip }
+output "auth_service_public_ip" { value = aws_instance.auth_service.public_ip }
 output "notification_service_public_ip" { value = aws_instance.notification_service.public_ip }
-output "data_injestion_public_ip"       { value = aws_instance.data_injestion.public_ip }
-output "adapter_aws_public_ip"          { value = aws_instance.adapter_aws.public_ip }
-output "normalization_service_public_ip"{ value = aws_instance.normalization_service.public_ip }
-output "reports_service_public_ip"      { value = aws_instance.reports_service.public_ip }
+output "data_injestion_public_ip" { value = aws_instance.data_injestion.public_ip }
+output "adapter_aws_public_ip" { value = aws_instance.adapter_aws.public_ip }
+output "normalization_service_public_ip" { value = aws_instance.normalization_service.public_ip }
+output "reports_service_public_ips" { value = aws_instance.reports_service[*].public_ip }
 
 output "postgres_reports_endpoint" {
   description = "RDS endpoint (host) for reports-service."

@@ -17,7 +17,7 @@ locals {
 # -----------------------------------------------------------------
 resource "aws_instance" "notification_service" {
   ami                         = local.ami_id
-  instance_type               = var.instance_type
+  instance_type               = var.cold_instance_type
   associate_public_ip_address = true
   key_name                    = var.key_name != "" ? var.key_name : null
   vpc_security_group_ids      = [aws_security_group.apps_http.id, aws_security_group.ssh.id]
@@ -63,6 +63,7 @@ resource "aws_instance" "auth_service" {
       -e MONGO_URI=mongodb://${aws_instance.datastores.private_ip}:27017/opticloud_auth \
       -e JWT_SECRET=${var.jwt_secret} \
       -e JWT_TTL_SECONDS=3600 \
+      -e BCRYPT_ROUNDS=${var.bcrypt_rounds} \
       -e NOTIFICATION_URL=http://${aws_instance.notification_service.private_ip}:8080/notifications \
       opticloud/auth-service
   EOT
@@ -79,6 +80,7 @@ resource "aws_instance" "auth_service" {
 # reports-service (Spring Boot + Postgres + Redis)
 # -----------------------------------------------------------------
 resource "aws_instance" "reports_service" {
+  count                       = var.reports_replicas
   ami                         = local.ami_id
   instance_type               = var.instance_type
   associate_public_ip_address = true
@@ -101,7 +103,7 @@ resource "aws_instance" "reports_service" {
       -e REPORTS_DB_PASSWORD=${var.postgres_password} \
       -e REDIS_HOST=${aws_instance.datastores.private_ip} \
       -e REDIS_PORT=6379 \
-      -e REPORTS_CACHE_TTL_MS=60000 \
+      -e REPORTS_CACHE_TTL_MS=3600000 \
       -e REPORTS_JWT_SECRET=${var.jwt_secret} \
       -e MONGO_URI=mongodb://${aws_instance.datastores.private_ip}:27017/opticloud_auth \
       -e NOTIFICATION_URL=http://${aws_instance.notification_service.private_ip}:8080/notifications \
@@ -111,7 +113,7 @@ resource "aws_instance" "reports_service" {
   depends_on = [aws_db_instance.postgres_reports, aws_instance.datastores, aws_instance.notification_service]
 
   tags = merge(local.common_tags, {
-    Name = "${var.project_prefix}-reports-service"
+    Name = "${var.project_prefix}-reports-service-${count.index}"
     Role = "reports-service"
   })
 }
@@ -121,7 +123,7 @@ resource "aws_instance" "reports_service" {
 # -----------------------------------------------------------------
 resource "aws_instance" "normalization_service" {
   ami                         = local.ami_id
-  instance_type               = var.instance_type
+  instance_type               = var.cold_instance_type
   associate_public_ip_address = true
   key_name                    = var.key_name != "" ? var.key_name : null
   vpc_security_group_ids      = [aws_security_group.apps_http.id, aws_security_group.ssh.id]
@@ -135,7 +137,7 @@ resource "aws_instance" "normalization_service" {
     docker run -d --restart=always --name normalization-service \
       -p 8080:8080 \
       -e SERVER_PORT=8080 \
-      -e REPORTS_SERVICE_URL=http://${aws_instance.reports_service.private_ip}:8080/reports \
+      -e REPORTS_SERVICE_URL=http://${aws_instance.reports_service[0].private_ip}:8080/reports \
       -e REPORTS_TIMEOUT_MS=5000 \
       opticloud/normalization-service
   EOT
@@ -158,7 +160,7 @@ resource "aws_instance" "normalization_service" {
 # -----------------------------------------------------------------
 resource "aws_instance" "adapter_aws" {
   ami                         = local.ami_id
-  instance_type               = var.instance_type
+  instance_type               = var.cold_instance_type
   associate_public_ip_address = true
   key_name                    = var.key_name != "" ? var.key_name : null
   vpc_security_group_ids      = [aws_security_group.apps_http.id, aws_security_group.ssh.id]
@@ -232,7 +234,7 @@ resource "aws_instance" "adapter_aws" {
 # -----------------------------------------------------------------
 resource "aws_instance" "data_injestion" {
   ami                         = local.ami_id
-  instance_type               = var.instance_type
+  instance_type               = var.cold_instance_type
   associate_public_ip_address = true
   key_name                    = var.key_name != "" ? var.key_name : null
   vpc_security_group_ids      = [aws_security_group.apps_http.id, aws_security_group.ssh.id]
@@ -245,7 +247,7 @@ resource "aws_instance" "data_injestion" {
     docker build -t opticloud/data-injestion .
     docker run -d --restart=always --name data-injestion \
       -p 8080:8080 \
-      -e REPORTS_SERVICE_URL=http://${aws_instance.reports_service.private_ip}:8080/reports \
+      -e REPORTS_SERVICE_URL=http://${aws_instance.reports_service[0].private_ip}:8080/reports \
       -e AUTH_SERVICE_URL=http://${aws_instance.auth_service.private_ip}:3000/auth \
       opticloud/data-injestion
   EOT

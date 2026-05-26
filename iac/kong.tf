@@ -3,6 +3,18 @@
 # substitutes the upstream placeholders with the private IPs that the
 # rest of the stack just received.
 # =====================================================================
+
+# reports-service is scaled to var.reports_replicas instances. Render one
+# Kong upstream target per replica so Kong round-robins reads across them
+# (ASR1). The <REPORTS_TARGETS> sentinel line in kong.yaml is replaced with
+# this block; \n produces real newlines under GNU sed on the Ubuntu AMI.
+locals {
+  reports_targets_yaml = join("\\n", [
+    for ip in aws_instance.reports_service[*].private_ip :
+    "      - target: ${ip}:8080\\n        weight: 100"
+  ])
+}
+
 resource "aws_instance" "kong" {
   ami                         = local.ami_id
   instance_type               = var.instance_type
@@ -18,7 +30,7 @@ resource "aws_instance" "kong" {
 
     sudo sed -i "s/<AUTH_HOST>/${aws_instance.auth_service.private_ip}/g" kong.yaml
     sudo sed -i "s/<INGESTION_HOST>/${aws_instance.data_injestion.private_ip}/g" kong.yaml
-    sudo sed -i "s/<REPORTS_HOST>/${aws_instance.reports_service.private_ip}/g" kong.yaml
+    sudo sed -i "s|<REPORTS_TARGETS>|${local.reports_targets_yaml}|" kong.yaml
     sudo sed -i "s/<ADAPTER_AWS_HOST>/${aws_instance.adapter_aws.private_ip}/g" kong.yaml
     sudo sed -i "s|<JWT_SECRET>|${var.jwt_secret}|g" kong.yaml
 

@@ -28,7 +28,8 @@ export class AuthService {
       throw new ConflictException('Username already taken');
     }
     await this.companyService.ensure(dto.companyCode, dto.companyName ?? dto.companyCode);
-    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS ?? '10', 10);
+    const passwordHash = await bcrypt.hash(dto.password, rounds);
     const user = await this.userModel.create({
       username: dto.username.toLowerCase(),
       passwordHash,
