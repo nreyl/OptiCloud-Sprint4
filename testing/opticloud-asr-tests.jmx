@@ -9,7 +9,7 @@
         <collectionProp name="Arguments.arguments">
           <elementProp name="KONG_IP" elementType="Argument">
             <stringProp name="Argument.name">KONG_IP</stringProp>
-            <stringProp name="Argument.value">13.220.127.223</stringProp>
+            <stringProp name="Argument.value">${__P(KONG_IP,13.222.131.21)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="KONG_PORT" elementType="Argument">
@@ -19,7 +19,7 @@
           </elementProp>
           <elementProp name="ASR1_THREADS" elementType="Argument">
             <stringProp name="Argument.name">ASR1_THREADS</stringProp>
-            <stringProp name="Argument.value">500</stringProp>
+            <stringProp name="Argument.value">${__P(ASR1_THREADS,500)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
             <stringProp name="Argument.desc">ASR 1 pide 5000. Empieza en 200, sube gradualmente segun aguante el lab.</stringProp>
           </elementProp>
