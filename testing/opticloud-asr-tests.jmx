@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
@@ -517,5 +518,333 @@
       </ResultCollector>
       <hashTree/>
     </hashTree>
+=======
+<!-- ===================================================== -->
+<!-- ASR1A - CACHE MISS (POSTGRESQL) -->
+<!-- ===================================================== -->
+
+<ThreadGroup guiclass="ThreadGroupGui"
+testclass="ThreadGroup"
+testname="ASR1A - Cache MISS (PostgreSQL)">
+
+  <stringProp name="ThreadGroup.num_threads">${ASR1_THREADS}</stringProp>
+  <stringProp name="ThreadGroup.ramp_time">${ASR1_RAMPUP}</stringProp>
+
+  <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+
+  <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+
+  <elementProp name="ThreadGroup.main_controller"
+  elementType="LoopController"
+  guiclass="LoopControlPanel"
+  testclass="LoopController"
+  testname="Loop Controller">
+
+    <stringProp name="LoopController.loops">${ASR1_LOOPS}</stringProp>
+
+    <boolProp name="LoopController.continue_forever">false</boolProp>
+
+  </elementProp>
+
+</ThreadGroup>
+
+<hashTree>
+
+  <HTTPSamplerProxy
+  guiclass="HttpTestSampleGui"
+  testclass="HTTPSamplerProxy"
+  testname="GET Reports - Cache MISS">
+
+    <stringProp name="HTTPSampler.path">
+      /reports/queries/companies/ACME/reports
+    </stringProp>
+
+    <stringProp name="HTTPSampler.method">GET</stringProp>
+
+    <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+
+    <elementProp name="HTTPsampler.Arguments"
+    elementType="Arguments"
+    guiclass="HTTPArgumentsPanel"
+    testclass="Arguments"
+    testname="Variables definidas por el Usuario">
+
+      <collectionProp name="Arguments.arguments"/>
+
+    </elementProp>
+
+  </HTTPSamplerProxy>
+
+  <hashTree>
+
+    <!-- AUTH HEADER -->
+
+    <HeaderManager
+    guiclass="HeaderPanel"
+    testclass="HeaderManager"
+    testname="Authorization">
+
+      <collectionProp name="HeaderManager.headers">
+
+        <elementProp name="" elementType="Header">
+
+          <stringProp name="Header.name">
+            Authorization
+          </stringProp>
+
+          <stringProp name="Header.value">
+            Bearer ${auth_token}
+          </stringProp>
+
+        </elementProp>
+
+      </collectionProp>
+
+    </HeaderManager>
+
+    <hashTree/>
+
+    <!-- STATUS 200 -->
+
+    <ResponseAssertion
+    guiclass="AssertionGui"
+    testclass="ResponseAssertion"
+    testname="Codigo 200">
+
+      <collectionProp name="Asserion.test_strings">
+        <stringProp name="49586">200</stringProp>
+      </collectionProp>
+
+      <stringProp name="Assertion.test_field">
+        Assertion.response_code
+      </stringProp>
+
+      <boolProp name="Assertion.assume_success">
+        false
+      </boolProp>
+
+      <intProp name="Assertion.test_type">8</intProp>
+
+    </ResponseAssertion>
+
+    <hashTree/>
+
+    <!-- LATENCY ASSERTION -->
+
+    <DurationAssertion
+    guiclass="DurationAssertionGui"
+    testclass="DurationAssertion"
+    testname="Latencia <= 100ms">
+
+      <stringProp name="DurationAssertion.duration">
+        ${ASR1_LATENCY_MS}
+      </stringProp>
+
+    </DurationAssertion>
+
+    <hashTree/>
+
+>>>>>>> 99753ed5af4fe167da4b06cd60643701853216ed
   </hashTree>
-</jmeterTestPlan>
+
+  <!-- SAVE RESULTS -->
+
+  <ResultCollector
+  guiclass="SimpleDataWriter"
+  testclass="ResultCollector"
+  testname="ASR1 MISS Results">
+
+    <stringProp name="filename">
+      asr1-cache-miss.jtl
+    </stringProp>
+
+  </ResultCollector>
+
+  <hashTree/>
+
+</hashTree>
+
+<!-- ===================================================== -->
+<!-- WAIT FOR REDIS CACHE WARMUP -->
+<!-- ===================================================== -->
+
+<TestAction
+guiclass="TestActionGui"
+testclass="TestAction"
+testname="Esperar warmup Redis">
+
+  <intProp name="ActionProcessor.action">1</intProp>
+
+  <intProp name="ActionProcessor.target">0</intProp>
+
+  <stringProp name="ActionProcessor.duration">
+    5000
+  </stringProp>
+
+</TestAction>
+
+<hashTree/>
+
+<!-- ===================================================== -->
+<!-- ASR1B - CACHE HIT (REDIS) -->
+<!-- ===================================================== -->
+
+<ThreadGroup
+guiclass="ThreadGroupGui"
+testclass="ThreadGroup"
+testname="ASR1B - Cache HIT (Redis)">
+
+  <stringProp name="ThreadGroup.num_threads">
+    ${ASR1_THREADS}
+  </stringProp>
+
+  <stringProp name="ThreadGroup.ramp_time">
+    ${ASR1_RAMPUP}
+  </stringProp>
+
+  <boolProp name="ThreadGroup.same_user_on_next_iteration">
+    true
+  </boolProp>
+
+  <stringProp name="ThreadGroup.on_sample_error">
+    continue
+  </stringProp>
+
+  <elementProp
+  name="ThreadGroup.main_controller"
+  elementType="LoopController"
+  guiclass="LoopControlPanel"
+  testclass="LoopController"
+  testname="Loop Controller">
+
+    <stringProp name="LoopController.loops">
+      ${ASR1_LOOPS}
+    </stringProp>
+
+    <boolProp name="LoopController.continue_forever">
+      false
+    </boolProp>
+
+  </elementProp>
+
+</ThreadGroup>
+
+<hashTree>
+
+  <HTTPSamplerProxy
+  guiclass="HttpTestSampleGui"
+  testclass="HTTPSamplerProxy"
+  testname="GET Reports - Cache HIT">
+
+    <stringProp name="HTTPSampler.path">
+      /reports/queries/companies/ACME/reports
+    </stringProp>
+
+    <stringProp name="HTTPSampler.method">
+      GET
+    </stringProp>
+
+    <boolProp name="HTTPSampler.postBodyRaw">
+      false
+    </boolProp>
+
+    <elementProp
+    name="HTTPsampler.Arguments"
+    elementType="Arguments"
+    guiclass="HTTPArgumentsPanel"
+    testclass="Arguments"
+    testname="Variables definidas por el Usuario">
+
+      <collectionProp name="Arguments.arguments"/>
+
+    </elementProp>
+
+  </HTTPSamplerProxy>
+
+  <hashTree>
+
+    <!-- AUTH -->
+
+    <HeaderManager
+    guiclass="HeaderPanel"
+    testclass="HeaderManager"
+    testname="Authorization">
+
+      <collectionProp name="HeaderManager.headers">
+
+        <elementProp name="" elementType="Header">
+
+          <stringProp name="Header.name">
+            Authorization
+          </stringProp>
+
+          <stringProp name="Header.value">
+            Bearer ${auth_token}
+          </stringProp>
+
+        </elementProp>
+
+      </collectionProp>
+
+    </HeaderManager>
+
+    <hashTree/>
+
+    <!-- STATUS ASSERT -->
+
+    <ResponseAssertion
+    guiclass="AssertionGui"
+    testclass="ResponseAssertion"
+    testname="Codigo 200">
+
+      <collectionProp name="Asserion.test_strings">
+        <stringProp name="49586">200</stringProp>
+      </collectionProp>
+
+      <stringProp name="Assertion.test_field">
+        Assertion.response_code
+      </stringProp>
+
+      <boolProp name="Assertion.assume_success">
+        false
+      </boolProp>
+
+      <intProp name="Assertion.test_type">8</intProp>
+
+    </ResponseAssertion>
+
+    <hashTree/>
+
+    <!-- LATENCY -->
+
+    <DurationAssertion
+    guiclass="DurationAssertionGui"
+    testclass="DurationAssertion"
+    testname="Latencia <= 100ms">
+
+      <stringProp name="DurationAssertion.duration">
+        ${ASR1_LATENCY_MS}
+      </stringProp>
+
+    </DurationAssertion>
+
+    <hashTree/>
+
+  </hashTree>
+
+  <!-- SAVE RESULTS -->
+
+  <ResultCollector
+  guiclass="SimpleDataWriter"
+  testclass="ResultCollector"
+  testname="ASR1 HIT Results">
+
+    <stringProp name="filename">
+      asr1-cache-hit.jtl
+    </stringProp>
+
+  </ResultCollector>
+
+  <hashTree/>
+
+</hashTree>
