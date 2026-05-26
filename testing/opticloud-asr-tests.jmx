@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="OptiCloud Sprint 4 - ASR Tests">
@@ -76,7 +76,7 @@
         <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="Variables definidas por el Usuario">
           <collectionProp name="Arguments.arguments"/>
         </elementProp>
-        <stringProp name="HTTPSampler.implementation"></stringProp>
+        <stringProp name="HTTPSampler.implementation"/>
       </ConfigTestElement>
       <hashTree/>
       <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager - JSON" enabled="true">
@@ -119,7 +119,7 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{&quot;username&quot;:&quot;loadtester1&quot;,&quot;password&quot;:&quot;Passw0rd!&quot;,&quot;companyCode&quot;:&quot;ACME&quot;,&quot;companyName&quot;:&quot;Acme Corp&quot;}</stringProp>
+                <stringProp name="Argument.value">{"username":"loadtester1","password":"Passw0rd!","companyCode":"ACME","companyName":"Acme Corp"}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
@@ -134,7 +134,7 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{&quot;username&quot;:&quot;loadtester2&quot;,&quot;password&quot;:&quot;Passw0rd!&quot;,&quot;companyCode&quot;:&quot;ACME&quot;,&quot;companyName&quot;:&quot;Acme Corp&quot;}</stringProp>
+                <stringProp name="Argument.value">{"username":"loadtester2","password":"Passw0rd!","companyCode":"ACME","companyName":"Acme Corp"}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
@@ -149,7 +149,7 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{&quot;username&quot;:&quot;loadtester3&quot;,&quot;password&quot;:&quot;Passw0rd!&quot;,&quot;companyCode&quot;:&quot;ACME&quot;,&quot;companyName&quot;:&quot;Acme Corp&quot;}</stringProp>
+                <stringProp name="Argument.value">{"username":"loadtester3","password":"Passw0rd!","companyCode":"ACME","companyName":"Acme Corp"}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
@@ -164,7 +164,7 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{&quot;username&quot;:&quot;attacker&quot;,&quot;password&quot;:&quot;Passw0rd!&quot;,&quot;companyCode&quot;:&quot;ACME&quot;,&quot;companyName&quot;:&quot;Acme Corp&quot;}</stringProp>
+                <stringProp name="Argument.value">{"username":"attacker","password":"Passw0rd!","companyCode":"ACME","companyName":"Acme Corp"}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
@@ -179,7 +179,7 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{&quot;username&quot;:&quot;victim&quot;,&quot;password&quot;:&quot;Passw0rd!&quot;,&quot;companyCode&quot;:&quot;BETA&quot;,&quot;companyName&quot;:&quot;Beta Inc&quot;}</stringProp>
+                <stringProp name="Argument.value">{"username":"victim","password":"Passw0rd!","companyCode":"BETA","companyName":"Beta Inc"}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
@@ -194,7 +194,7 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{&quot;username&quot;:&quot;loadtester1&quot;,&quot;password&quot;:&quot;Passw0rd!&quot;}</stringProp>
+                <stringProp name="Argument.value">{"username":"loadtester1","password":"Passw0rd!"}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
@@ -221,7 +221,7 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{&quot;company_code&quot;:&quot;ACME&quot;,&quot;provider&quot;:&quot;aws&quot;,&quot;period_start&quot;:&quot;2026-05-01T00:00:00Z&quot;,&quot;period_end&quot;:&quot;2026-05-31T23:59:59Z&quot;,&quot;lines&quot;:[{&quot;service&quot;:&quot;EC2&quot;,&quot;resource_id&quot;:&quot;i-seed01&quot;,&quot;region&quot;:&quot;us-east-1&quot;,&quot;usage_amount&quot;:720,&quot;usage_unit&quot;:&quot;Hrs&quot;,&quot;cost_amount&quot;:14.97,&quot;cost_currency&quot;:&quot;USD&quot;}]}</stringProp>
+                <stringProp name="Argument.value">{"company_code":"ACME","provider":"aws","period_start":"2026-05-01T00:00:00Z","period_end":"2026-05-31T23:59:59Z","lines":[{"service":"EC2","resource_id":"i-seed01","region":"us-east-1","usage_amount":720,"usage_unit":"Hrs","cost_amount":14.97,"cost_currency":"USD"}]}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
@@ -275,7 +275,7 @@
             <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
             <boolProp name="Assertion.assume_success">false</boolProp>
             <intProp name="Assertion.test_type">8</intProp>
-            <stringProp name="Assertion.custom_message"></stringProp>
+            <stringProp name="Assertion.custom_message"/>
           </ResponseAssertion>
           <hashTree/>
           <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Latencia &lt;= 100ms (ASR1)">
@@ -313,7 +313,7 @@
               <threadCounts>true</threadCounts>
             </value>
           </objProp>
-          <stringProp name="filename"></stringProp>
+          <stringProp name="filename"/>
         </ResultCollector>
         <hashTree/>
         <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="Ver Árbol de Resultados">
@@ -350,7 +350,7 @@
               <connectTime>true</connectTime>
             </value>
           </objProp>
-          <stringProp name="filename"></stringProp>
+          <stringProp name="filename"/>
         </ResultCollector>
         <hashTree/>
       </hashTree>
@@ -375,7 +375,7 @@
               <collectionProp name="Arguments.arguments">
                 <elementProp name="" elementType="HTTPArgument">
                   <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                  <stringProp name="Argument.value">{&quot;username&quot;:&quot;attacker&quot;,&quot;password&quot;:&quot;Passw0rd!&quot;}</stringProp>
+                  <stringProp name="Argument.value">{"username":"attacker","password":"Passw0rd!"}</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
               </collectionProp>
@@ -415,7 +415,7 @@
             <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
             <boolProp name="Assertion.assume_success">false</boolProp>
             <intProp name="Assertion.test_type">8</intProp>
-            <stringProp name="Assertion.custom_message"></stringProp>
+            <stringProp name="Assertion.custom_message"/>
           </ResponseAssertion>
           <hashTree/>
           <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Bloqueo &lt; 500ms (ASR2)" enabled="true">
@@ -453,7 +453,7 @@
               <threadCounts>true</threadCounts>
             </value>
           </objProp>
-          <stringProp name="filename"></stringProp>
+          <stringProp name="filename"/>
         </ResultCollector>
         <hashTree/>
       </hashTree>
@@ -478,7 +478,7 @@
               <collectionProp name="Arguments.arguments">
                 <elementProp name="" elementType="HTTPArgument">
                   <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                  <stringProp name="Argument.value">{&quot;company_code&quot;:&quot;ACME&quot;,&quot;provider&quot;:&quot;aws&quot;,&quot;account_id&quot;:&quot;jmeter-${__threadNum}&quot;,&quot;region&quot;:&quot;us-east-1&quot;}</stringProp>
+                  <stringProp name="Argument.value">{"company_code":"ACME","provider":"aws","account_id":"jmeter-${__threadNum}-${__time(YMDHMS)}-${__Random(1,999999)}","region":"us-east-1"}</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
               </collectionProp>
@@ -502,7 +502,7 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{&quot;account_id&quot;:${account_id},&quot;period_start&quot;:&quot;2026-05-01T00:00:00Z&quot;,&quot;period_end&quot;:&quot;2026-05-02T00:00:00Z&quot;}</stringProp>
+                <stringProp name="Argument.value">{"account_id":${account_id},"period_start":"2026-05-01T00:00:00Z","period_end":"2026-05-02T00:00:00Z"}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
@@ -516,7 +516,7 @@
             <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
             <boolProp name="Assertion.assume_success">false</boolProp>
             <intProp name="Assertion.test_type">8</intProp>
-            <stringProp name="Assertion.custom_message"></stringProp>
+            <stringProp name="Assertion.custom_message"/>
           </ResponseAssertion>
           <hashTree/>
         </hashTree>
@@ -550,7 +550,7 @@
               <threadCounts>true</threadCounts>
             </value>
           </objProp>
-          <stringProp name="filename"></stringProp>
+          <stringProp name="filename"/>
         </ResultCollector>
         <hashTree/>
       </hashTree>
@@ -584,7 +584,7 @@
             <threadCounts>true</threadCounts>
           </value>
         </objProp>
-        <stringProp name="filename"></stringProp>
+        <stringProp name="filename"/>
       </ResultCollector>
       <hashTree/>
     </hashTree>
